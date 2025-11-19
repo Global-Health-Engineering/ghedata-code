@@ -47,3 +47,6 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+github/raw-data 
+github/clean-data/github_repos.csv

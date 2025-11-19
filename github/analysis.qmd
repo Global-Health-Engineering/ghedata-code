@@ -1,0 +1,420 @@
+---
+title: "GHE GitHub Repository Analysis"
+author: "Global Health Engineering"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-location: left
+execute:
+  echo: true
+  warning: false
+  message: false
+code-fold: true
+---
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(scales)
+library(knitr)
+library(ggthemes)
+
+# Set theme for all plots
+theme_set(theme_few())
+```
+
+## Repositories
+
+```{r}
+github_repos <- read_csv("clean-data/github_repos.csv")
+```
+
+### Private/public repositories
+
+```{r}
+github_repos |>
+     count(created_year, is_private) |>
+     ggplot(aes(x = created_year, y = n, fill = is_private)) +
+     geom_col(position = position_dodge2()) +
+     labs(
+          x = "",
+          y = "Number of repositories\n",
+          fill = "Visibility"
+     ) +
+     theme_few() +
+     theme(panel.grid = element_blank())
+
+```
+
+### Licenses
+
+```{r}
+github_repos |>
+     count(created_year, license_dummy) |>
+     ggplot(aes(x = created_year, y = n, fill = license_dummy)) +
+     geom_col(position = position_dodge2()) +
+     labs(
+          x = "",
+          y = "Number of repositories\n",
+          fill = "License?"
+     ) +
+     theme_few() +
+     theme(panel.grid = element_blank())
+```
+
+### Main repo languages over the years
+
+```{r}
+github_repos |>
+     filter(publication_type != "Student paper") |>
+     count(created_year, primary_language_ext2) |>
+     ggplot(aes(x = created_year, y = n, fill = primary_language_ext2)) +
+     geom_col(position = position_dodge2()) +
+     labs(
+          x = "",
+          y = "Number of repositories\n",
+          fill = "Main repo language",
+          subtitle = "Student theses excluded (no primary language available)"
+     ) +
+     theme_bw() +
+     theme(panel.grid = element_blank())
+```
+
+```{r}
+github_repos |>
+     filter(publication_type != "Student paper") |>
+     count(created_year, primary_language_ext2) |> 
+  group_by(created_year) |> 
+  mutate(rel_freq = n/sum(n)) |> 
+  ggplot(aes(x = created_year, y = rel_freq, fill = primary_language_ext2)) +
+     geom_col(position = "stack") +
+  scale_y_continuous(labels = scales::label_percent()) +
+  labs(y = "",
+       x = "",
+       fill = "Main repo language")
+```
+
+
+### Publication Types over the years
+
+```{r}
+github_repos |>
+     count(created_year, publication_type) |>
+     ggplot(aes(x = created_year, y = n, fill = publication_type)) +
+     geom_col(position = position_dodge2()) +
+     labs(x = "", y = "Number of repositories\n", fill = "Publication Type") +
+     theme_bw() +
+     theme(panel.grid = element_blank())
+```
+
+
+## Contributors
+
+```{r}
+#| label: load-data
+contributors <- read_csv("raw-data/contributors.csv")
+```
+
+
+### Top contributors by total commits
+
+```{r}
+#| label: top-contributors-total
+top_contributors <- contributors %>%
+  group_by(login) %>%
+  summarise(
+    total_contributions = sum(contributions),
+    repos_contributed_to = n_distinct(repository)
+  ) %>%
+  arrange(desc(total_contributions)) %>%
+  head(10)
+
+# Display table
+kable(top_contributors, 
+      caption = "Top 10 Contributors by Total Contributions",
+      col.names = c("Contributor", "Total Contributions", "Repositories"))
+```
+
+```{r}
+#| label: fig-top-contributors
+#| fig-cap: "Top 10 Contributors by Total Contributions Across All Repositories"
+#| fig-height: 6
+#| fig-width: 10
+
+ggplot(top_contributors, aes(x = reorder(login, total_contributions), 
+                              y = total_contributions)) +
+  geom_col(fill = "#2E86AB", alpha = 0.8) +
+  geom_text(aes(label = total_contributions), 
+            hjust = -0.2, 
+            size = 3.5) +
+  coord_flip() +
+  labs(
+    x = "Contributor",
+    y = "Total Number of Contributions",
+    caption = paste("Data from", n_distinct(contributors$repository), "repositories")
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10)
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1)),
+                     labels = comma)
+```
+
+### Average Number of Contributors per Repository
+
+```{r}
+#| label: avg-contributors
+repo_stats <- contributors %>%
+  group_by(repository) %>%
+  summarise(
+    num_contributors = n_distinct(login),
+    total_contributions = sum(contributions)
+  )
+
+avg_contributors <- mean(repo_stats$num_contributors)
+median_contributors <- median(repo_stats$num_contributors)
+
+# Create summary table
+summary_stats <- tibble(
+  Metric = c("Average Contributors per Repository", 
+             "Median Contributors per Repository",
+             "Total Unique Contributors",
+             "Total Repositories"),
+  Value = c(round(avg_contributors, 2),
+            median_contributors,
+            n_distinct(contributors$login),
+            n_distinct(contributors$repository))
+)
+
+kable(summary_stats, caption = "Repository Contributor Statistics")
+```
+
+```{r}
+#| label: fig-contributor-distribution
+#| fig-cap: "Distribution of Number of Contributors per Repository"
+#| fig-height: 5
+#| fig-width: 8
+
+ggplot(repo_stats, aes(x = num_contributors)) +
+  geom_histogram(binwidth = 1, fill = "#2E86AB", alpha = 0.8, color = "white") +
+  geom_vline(xintercept = avg_contributors, 
+             color = "red", linetype = "dashed", size = 1) +
+  geom_vline(xintercept = median_contributors, 
+             color = "orange", linetype = "dashed", size = 1) +
+  annotate("text", x = avg_contributors + 0.5, y = Inf, 
+           label = paste("Mean =", round(avg_contributors, 1)), 
+           hjust = 0, vjust = 2, color = "red", fontface = "bold") +
+  annotate("text", x = median_contributors + 0.5, y = Inf, 
+           label = paste("Median =", median_contributors), 
+           hjust = 0, vjust = 3.5, color = "orange", fontface = "bold") +
+  labs(
+    title = "Distribution of Contributors per Repository",
+    x = "Number of Contributors",
+    y = "Number of Repositories",
+    subtitle = paste("Based on", n_distinct(repo_stats$repository), "repositories")
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12)
+  )
+```
+
+### Contributors by Number of Repositories
+
+```{r}
+#| label: contributors-by-repo-count
+contributors_by_repos <- contributors %>%
+  group_by(login) %>%
+  summarise(
+    num_repositories = n_distinct(repository),
+    total_contributions = sum(contributions),
+    avg_contributions_per_repo = round(mean(contributions), 1)
+  ) %>%
+  arrange(desc(num_repositories)) %>%
+  head(10)
+
+kable(contributors_by_repos,
+      caption = "Top 10 Contributors by Number of Repositories",
+      col.names = c("Contributor", "Repositories", "Total Contributions", "Avg per Repo"))
+```
+
+```{r}
+#| label: fig-contributors-by-repos
+#| fig-cap: "Top 10 Contributors by Number of Repositories"
+#| fig-height: 6
+#| fig-width: 10
+
+ggplot(contributors_by_repos, aes(x = reorder(login, num_repositories), 
+                                   y = num_repositories)) +
+  geom_col(fill = "#A23B72", alpha = 0.8) +
+  geom_text(aes(label = num_repositories), 
+            hjust = -0.2, 
+            size = 3.5) +
+  coord_flip() +
+  labs(
+    title = "Top 10 Contributors by Repository Count",
+    subtitle = "Contributors who have contributed to the most repositories",
+    x = "Contributor",
+    y = "Number of Repositories",
+    caption = paste("Total repositories analyzed:", n_distinct(contributors$repository))
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10)
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1)))
+```
+
+### Contribution Concentration Analysis
+
+```{r}
+#| label: contribution-concentration
+# Calculate cumulative contribution percentage
+contribution_concentration <- contributors %>%
+  group_by(login) %>%
+  summarise(total_contributions = sum(contributions)) %>%
+  arrange(desc(total_contributions)) %>%
+  mutate(
+    cumulative_contributions = cumsum(total_contributions),
+    cumulative_percentage = cumulative_contributions / sum(total_contributions) * 100,
+    contributor_rank = row_number()
+  )
+
+# Find how many contributors make up 50% and 80% of contributions
+contributors_for_50 <- min(which(contribution_concentration$cumulative_percentage >= 50))
+contributors_for_80 <- min(which(contribution_concentration$cumulative_percentage >= 80))
+
+cat(paste("Top", contributors_for_50, "contributors (", 
+          round(contributors_for_50/n_distinct(contributors$login)*100, 1), 
+          "% of people) make 50% of all contributions\n"))
+cat(paste("Top", contributors_for_80, "contributors (",
+          round(contributors_for_80/n_distinct(contributors$login)*100, 1),
+          "% of people) make 80% of all contributions\n"))
+```
+
+```{r}
+#| label: fig-lorenz-curve
+#| fig-cap: "Lorenz Curve of Contribution Distribution"
+#| fig-height: 6
+#| fig-width: 8
+
+# Prepare data for Lorenz curve
+lorenz_data <- contribution_concentration %>%
+  mutate(
+    contributor_percentage = contributor_rank / max(contributor_rank) * 100
+  ) %>%
+  add_row(contributor_percentage = 0, cumulative_percentage = 0, .before = 1)
+
+ggplot(lorenz_data, aes(x = contributor_percentage, y = cumulative_percentage)) +
+  geom_line(size = 1.5, color = "#2E86AB") +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray50") +
+  geom_ribbon(aes(ymin = contributor_percentage, ymax = cumulative_percentage), 
+              fill = "#2E86AB", alpha = 0.2) +
+  annotate("text", x = 50, y = 25, label = "Perfect Equality", 
+           angle = 45, color = "gray50", size = 4) +
+  annotate("point", x = contributors_for_50/n_distinct(contributors$login)*100, 
+           y = 50, color = "red", size = 3) +
+  annotate("text", x = contributors_for_50/n_distinct(contributors$login)*100 + 5, 
+           y = 50, label = paste(contributors_for_50, "people\nmake 50% of\ncontributions"),
+           size = 3, hjust = 0, color = "red") +
+  labs(
+    title = "Contribution Inequality (Lorenz Curve)",
+    subtitle = "Distribution of contributions across all contributors",
+    x = "Cumulative % of Contributors",
+    y = "Cumulative % of Contributions"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(0, 100, 20)) +
+  scale_y_continuous(breaks = seq(0, 100, 20))
+```
+
+### Time-Based Insights (Repository Age Analysis)
+
+```{r, include=FALSE, eval=FALSE}
+#| label: repo-freshness
+# Load repos.csv to get creation dates
+repos_info <- read_delim("repos.csv", delim = ";", show_col_types = FALSE)
+
+# Parse dates and calculate age
+repos_with_age <- repos_info %>%
+  mutate(
+    createdAt = as.Date(createdAt),
+    updatedAt = as.Date(updatedAt),
+    age_days = as.numeric(Sys.Date() - createdAt),
+    days_since_update = as.numeric(Sys.Date() - updatedAt)
+  ) %>%
+  select(name, createdAt, updatedAt, age_days, days_since_update)
+
+# Join with contributor data
+repo_activity <- repo_stats %>%
+  left_join(repos_with_age, by = c("repository" = "name")) %>%
+  filter(!is.na(age_days))
+
+# Correlation between age and contributors
+cor_age_contributors <- cor(repo_activity$age_days, repo_activity$num_contributors, use = "complete.obs")
+
+cat(paste("Correlation between repository age and number of contributors:", 
+          round(cor_age_contributors, 3), "\n"))
+
+# Recently active repositories
+recent_repos <- repo_activity %>%
+  filter(days_since_update < 30) %>%
+  arrange(desc(num_contributors)) %>%
+  head(5)
+
+cat("\nMost collaborative repositories updated in the last 30 days:\n")
+kable(recent_repos %>% select(repository, num_contributors, days_since_update),
+      col.names = c("Repository", "Contributors", "Days Since Update"))
+```
+
+```{r, include=FALSE, eval=FALSE}
+#| label: fig-age-vs-contributors
+#| fig-cap: "Repository Age vs Number of Contributors"
+#| fig-height: 6
+#| fig-width: 10
+
+ggplot(repo_activity, aes(x = age_days/365, y = num_contributors)) +
+  geom_point(aes(size = total_contributions, color = days_since_update < 90), 
+             alpha = 0.6) +
+  geom_smooth(method = "loess", se = TRUE, color = "#2E86AB") +
+  scale_size_continuous(name = "Total\nContributions", range = c(2, 10)) +
+  scale_color_manual(values = c("gray50", "#F18F01"), 
+                     labels = c("Inactive (90+ days)", "Active (<90 days)"),
+                     name = "Activity Status") +
+  labs(
+    title = "Repository Maturity vs Collaboration",
+    subtitle = "How repository age relates to number of contributors",
+    x = "Repository Age (years)",
+    y = "Number of Contributors"
+  ) +
+  theme_minimal()
+```
+
+## Summary
+
+This analysis examined `r n_distinct(contributors$repository)` repositories with a total of `r n_distinct(contributors$login)` unique contributors. 
+
+### Key findings:
+
+- The average repository has **`r round(avg_contributors, 1)` contributors**
+- The top contributor (`r top_contributors$login[1]`) has made **`r format(top_contributors$total_contributions[1], big.mark = ",")` contributions** across all repositories
+- The most collaborative contributor (`r contributors_by_repos$login[1]`) has contributed to **`r contributors_by_repos$num_repositories[1]` different repositories**
+
+### Interesting patterns discovered:
+
+- **Contribution inequality**: Just `r contributors_for_50` people (`r round(contributors_for_50/n_distinct(contributors$login)*100, 1)`% of all contributors) account for 50% of all contributions
+
+```{r}
+#- **Repository age correlation**: The correlation between repository age and number of contributors is `r round(cor_age_contributors, 2)`, suggesting `r ifelse(cor_age_contributors > 0.3, "older repositories tend to attract more contributors", "age doesn't strongly predict contributor count")`
+
+# - **Repository collaboration**: `r round(multi_repos/nrow(repo_stats)*100, 1)`% of repositories have multiple contributors
+
+#- **Power contributors**: `r sum(contributor_categories$category == "Power Contributors (100+ commits)")` individuals have made 100+ contributions each
+```
+
