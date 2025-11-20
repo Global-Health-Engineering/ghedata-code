@@ -1,0 +1,627 @@
+---
+title: "Website Analytics Analysis (Plausible)"
+format: html
+editor: source
+execute:
+  echo: false
+---
+
+```{r extract_and_transform_data}
+#| include: false
+#| eval: false
+# Set to eval: true to extract and transform data before rendering
+# This chunk extracts data from Plausible API and then transforms it
+
+library(here)
+
+# Plausible credentials
+api_key <- ""  # Or use: Sys.getenv("PLAUSIBLE_API_KEY")
+site_id <- "ds4owd-002.github.io/website"
+
+if (api_key != "" && site_id != "") {
+  # Step 1: Extract data using bash script
+  extraction_script <- here("plausible", "scripts", "01_extract_plausible_data.sh")
+  output_json <- here("plausible", "data", "plausible_raw.json")
+
+  extract_result <- system2(
+    extraction_script,
+    args = c(shQuote(api_key), shQuote(site_id), output_json),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+
+  if (!is.null(attr(extract_result, "status")) && attr(extract_result, "status") != 0) {
+    cat("Error extracting data:\n")
+    cat(paste(extract_result, collapse = "\n"), "\n")
+    stop("Failed to extract Plausible data")
+  }
+
+  # Step 2: Transform the extracted data
+  transform_result <- system2(
+    "Rscript",
+    args = here("plausible", "scripts", "02_transform_plausible_data.R"),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+
+  if (!is.null(attr(transform_result, "status")) && attr(transform_result, "status") != 0) {
+    cat("Error transforming data:\n")
+    cat(paste(transform_result, collapse = "\n"), "\n")
+    stop("Failed to transform Plausible data")
+  }
+
+  cat("Data extraction and transformation complete!\n")
+} else {
+  cat("Note: API key or site ID not provided.\n")
+  cat("Skipping data extraction. Using existing processed data.\n")
+}
+```
+
+```{r setup}
+#| include: false
+library(tidyverse)
+library(lubridate)
+library(scales)
+library(ggthemes)
+library(here)
+
+# Load data
+load(here("plausible", "data", "plausible_data.rda"))
+
+# Set theme
+theme_set(theme_minimal())
+```
+
+## Overview
+
+This analysis covers website analytics for **`r plausible_metadata$site_id`**, spanning **`r plausible_metadata$total_days` days** from **`r format(plausible_metadata$date_range_start, "%B %d, %Y")`** to **`r format(plausible_metadata$date_range_end, "%B %d, %Y")`**.
+
+*Data extracted: `r format(plausible_metadata$extracted_at, "%B %d, %Y at %H:%M UTC")`*
+
+**Overall Statistics:**
+
+- Total unique visitors: **`r comma(summary_stats$total_visitors)`**
+- Total visits: **`r comma(summary_stats$total_visits)`**
+- Total pageviews: **`r comma(summary_stats$total_pageviews)`**
+- Average bounce rate: `r round(summary_stats$avg_bounce_rate, 1)`%
+- Average visit duration: `r round(summary_stats$avg_visit_duration)` seconds
+
+## Traffic Trends Over Time
+
+### Daily Visitors
+
+```{r daily_visitors}
+#| fig-width: 10
+#| fig-height: 6
+
+timeseries_data |>
+  ggplot(aes(x = date, y = visitors)) +
+  geom_line(color = colorblind_pal()(8)[1], linewidth = 1) +
+  geom_point(color = colorblind_pal()(8)[1], size = 1.5, alpha = 0.5) +
+  labs(title = "Daily Unique Visitors",
+       x = "Date",
+       y = "Unique Visitors") +
+  scale_y_continuous(labels = comma) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Daily Pageviews
+
+```{r daily_pageviews}
+#| fig-width: 10
+#| fig-height: 6
+
+timeseries_data |>
+  ggplot(aes(x = date, y = pageviews)) +
+  geom_line(color = colorblind_pal()(8)[2], linewidth = 1) +
+  geom_point(color = colorblind_pal()(8)[2], size = 1.5, alpha = 0.5) +
+  labs(title = "Daily Pageviews",
+       x = "Date",
+       y = "Pageviews") +
+  scale_y_continuous(labels = comma) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Multiple Metrics Over Time
+
+```{r multi_metrics}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+multi_metrics_data <- timeseries_data |>
+  select(date, visitors, visits, pageviews) |>
+  pivot_longer(cols = -date, names_to = "metric", values_to = "count")
+
+# Create plot
+multi_metrics_data |>
+  ggplot(aes(x = date, y = count, color = metric)) +
+  geom_line(linewidth = 1) +
+  labs(title = "Traffic Metrics Over Time",
+       x = "Date",
+       y = "Count",
+       color = "Metric") +
+  scale_y_continuous(labels = comma) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") +
+  scale_color_colorblind(labels = c("Pageviews", "Visitors", "Visits")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Engagement Metrics Over Time
+
+```{r engagement_over_time}
+#| fig-width: 10
+#| fig-height: 6
+
+timeseries_data |>
+  ggplot(aes(x = date, y = bounce_rate)) +
+  geom_line(color = colorblind_pal()(8)[4], linewidth = 1) +
+  labs(title = "Bounce Rate Over Time",
+       x = "Date",
+       y = "Bounce Rate (%)") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r visit_duration_over_time}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+visit_duration_data <- timeseries_data |>
+  mutate(visit_duration_min = visit_duration / 60)
+
+# Create plot
+visit_duration_data |>
+  ggplot(aes(x = date, y = visit_duration_min)) +
+  geom_line(color = colorblind_pal()(8)[6], linewidth = 1) +
+  labs(title = "Average Visit Duration Over Time",
+       x = "Date",
+       y = "Visit Duration (minutes)") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Monthly Analysis
+
+```{r monthly_trends}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+monthly_trends_data <- timeseries_data |>
+  mutate(month = floor_date(date, "month")) |>
+  group_by(month) |>
+  summarise(
+    visitors = sum(visitors, na.rm = TRUE),
+    visits = sum(visits, na.rm = TRUE),
+    pageviews = sum(pageviews, na.rm = TRUE),
+    avg_bounce_rate = mean(bounce_rate, na.rm = TRUE),
+    avg_visit_duration = mean(visit_duration, na.rm = TRUE)
+  )
+
+# Create plot
+monthly_trends_data |>
+  ggplot(aes(x = month, y = visitors)) +
+  geom_col(fill = colorblind_pal()(8)[2]) +
+  labs(title = "Monthly Unique Visitors",
+       x = "Month",
+       y = "Unique Visitors") +
+  scale_y_continuous(labels = comma) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r monthly_table}
+#| echo: false
+
+timeseries_data |>
+  mutate(month = floor_date(date, "month")) |>
+  group_by(month) |>
+  summarise(
+    Visitors = sum(visitors, na.rm = TRUE),
+    Visits = sum(visits, na.rm = TRUE),
+    Pageviews = sum(pageviews, na.rm = TRUE),
+    `Bounce Rate (%)` = round(mean(bounce_rate, na.rm = TRUE), 1),
+    `Avg Duration (s)` = round(mean(visit_duration, na.rm = TRUE), 0)
+  ) |>
+  arrange(desc(month)) |>
+  mutate(month = format(month, "%b %Y")) |>
+  rename(Month = month) |>
+  knitr::kable(caption = "Monthly Statistics")
+```
+
+## Traffic Sources
+
+```{r traffic_sources}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+traffic_sources_plot_data <- sources_data |>
+  head(10) |>
+  mutate(
+    source = fct_reorder(source, visitors),
+    pct = visitors / sum(sources_data$visitors) * 100
+  )
+
+# Recycle colorblind palette colors for all sources
+n_sources <- nrow(traffic_sources_plot_data)
+colors <- rep(colorblind_pal()(8), length.out = n_sources)
+
+# Create plot
+traffic_sources_plot_data |>
+  ggplot(aes(x = visitors, y = source, fill = source)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(comma(visitors), " (", round(pct, 1), "%)")),
+            hjust = -0.1, size = 4) +
+  labs(title = "Top 10 Visitors by Traffic Source",
+       x = "Unique Visitors",
+       y = "Source") +
+  scale_x_continuous(labels = comma) +
+  scale_fill_manual(values = colors) +
+  expand_limits(x = max(traffic_sources_plot_data$visitors) * 1.2)
+```
+
+```{r sources_metrics}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+sources_metrics_plot_data <- sources_data |>
+  head(10) |>
+  mutate(source = fct_reorder(source, bounce_rate))
+
+# Recycle colorblind palette colors for all sources
+n_sources <- nrow(sources_metrics_plot_data)
+colors <- rep(colorblind_pal()(8), length.out = n_sources)
+
+# Create plot
+sources_metrics_plot_data |>
+  ggplot(aes(x = bounce_rate, y = source, fill = source)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(round(bounce_rate, 1), "%")),
+            hjust = -0.2, size = 4) +
+  labs(title = "Bounce Rate by Traffic Source (Top 10)",
+       x = "Bounce Rate (%)",
+       y = "Source") +
+  scale_fill_manual(values = colors) +
+  expand_limits(x = max(sources_metrics_plot_data$bounce_rate) * 1.15)
+```
+
+```{r sources_table}
+#| echo: false
+#| include: false
+
+sources_data |>
+  mutate(
+    `Share (%)` = round(visitors / sum(visitors) * 100, 1)
+  ) |>
+  select(
+    Source = source,
+    Visitors = visitors,
+    `Share (%)`,
+    Visits = visits,
+    Pageviews = pageviews,
+    `Bounce Rate (%)` = bounce_rate,
+    `Avg Duration (s)` = visit_duration
+  ) |>
+  mutate(`Bounce Rate (%)` = round(`Bounce Rate (%)`, 1)) |>
+  knitr::kable(caption = "Traffic Source Statistics")
+```
+
+## Device Analysis
+
+```{r devices}
+#| fig-width: 8
+#| fig-height: 5
+
+# Prepare data
+devices_plot_data <- devices_data |>
+  mutate(
+    pct = visitors / sum(visitors) * 100,
+    device = fct_reorder(device, visitors)
+  )
+
+# Create plot
+devices_plot_data |>
+  ggplot(aes(x = visitors, y = device, fill = device)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(comma(visitors), "\n(", round(pct, 1), "%)")),
+            hjust = -0.1, size = 4) +
+  labs(title = "Visitors by Device Type",
+       x = "Unique Visitors",
+       y = "Device") +
+  scale_x_continuous(labels = comma) +
+  scale_fill_colorblind() +
+  expand_limits(x = max(devices_plot_data$visitors) * 1.2)
+```
+
+```{r device_metrics}
+#| echo: false
+
+devices_data |>
+  mutate(
+    `Share (%)` = round(visitors / sum(visitors) * 100, 1)
+  ) |>
+  select(
+    Device = device,
+    Visitors = visitors,
+    `Share (%)`,
+    Pageviews = pageviews,
+    `Bounce Rate (%)` = bounce_rate,
+    `Avg Duration (s)` = visit_duration
+  ) |>
+  mutate(`Bounce Rate (%)` = round(`Bounce Rate (%)`, 1)) |>
+  knitr::kable(caption = "Device Statistics")
+```
+
+## Browser & Operating System
+
+```{r browsers}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+browsers_plot_data <- browsers_data |>
+  head(15) |>
+  mutate(
+    browser = fct_reorder(browser, visitors),
+    pct = visitors / sum(browsers_data$visitors) * 100
+  )
+
+# Recycle colorblind palette colors for all browsers
+n_browsers <- nrow(browsers_plot_data)
+colors <- rep(colorblind_pal()(8), length.out = n_browsers)
+
+# Create plot
+browsers_plot_data |>
+  ggplot(aes(x = visitors, y = browser, fill = browser)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(comma(visitors), " (", round(pct, 1), "%)")),
+            hjust = -0.1, size = 3.5) +
+  labs(title = "Top 15 Browsers by Unique Visitors",
+       x = "Unique Visitors",
+       y = "Browser") +
+  scale_x_continuous(labels = comma) +
+  scale_fill_manual(values = colors) +
+  expand_limits(x = max(browsers_plot_data$visitors) * 1.25)
+```
+
+```{r os}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+os_plot_data <- os_data |>
+  head(15) |>
+  mutate(
+    os = fct_reorder(os, visitors),
+    pct = visitors / sum(os_data$visitors) * 100
+  )
+
+# Recycle colorblind palette colors for all OS
+n_os <- nrow(os_plot_data)
+colors <- rep(colorblind_pal()(8), length.out = n_os)
+
+# Create plot
+os_plot_data |>
+  ggplot(aes(x = visitors, y = os, fill = os)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(comma(visitors), " (", round(pct, 1), "%)")),
+            hjust = -0.1, size = 3.5) +
+  labs(title = "Top 15 Operating Systems by Unique Visitors",
+       x = "Unique Visitors",
+       y = "Operating System") +
+  scale_x_continuous(labels = comma) +
+  scale_fill_manual(values = colors) +
+  expand_limits(x = max(os_plot_data$visitors) * 1.25)
+```
+
+## Geographic Distribution
+
+```{r countries}
+#| fig-width: 10
+#| fig-height: 8
+
+# Prepare data
+countries_plot_data <- countries_data |>
+  head(20) |>
+  mutate(
+    country = fct_reorder(country, visitors),
+    pct = visitors / sum(countries_data$visitors) * 100
+  )
+
+# Recycle colorblind palette colors for all countries
+n_countries <- nrow(countries_plot_data)
+colors <- rep(colorblind_pal()(8), length.out = n_countries)
+
+# Create plot
+countries_plot_data |>
+  ggplot(aes(x = visitors, y = country, fill = country)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(comma(visitors), " (", round(pct, 1), "%)")),
+            hjust = -0.1, size = 3.5) +
+  labs(title = "Top 20 Countries by Unique Visitors",
+       x = "Unique Visitors",
+       y = "Country") +
+  scale_x_continuous(labels = comma) +
+  scale_fill_manual(values = colors) +
+  expand_limits(x = max(countries_plot_data$visitors) * 1.25)
+```
+
+```{r countries_table}
+#| echo: false
+#| include: false
+
+countries_data |>
+  head(20) |>
+  mutate(
+    `Share (%)` = round(visitors / sum(countries_data$visitors) * 100, 1)
+  ) |>
+  select(
+    Country = country,
+    Visitors = visitors,
+    `Share (%)`,
+    Visits = visits,
+    Pageviews = pageviews
+  ) |>
+  knitr::kable(caption = "Top 20 Countries Statistics")
+```
+
+## Top Pages
+
+```{r top_pages}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+top_pages_plot_data <- pages_data |>
+  head(10) |>
+  mutate(
+    page = fct_reorder(page, visitors),
+    pct = visitors / sum(visitors) * 100
+  )
+
+# Recycle colorblind palette colors for all pages
+n_pages <- nrow(top_pages_plot_data)
+colors <- rep(colorblind_pal()(8), length.out = n_pages)
+
+# Create plot
+top_pages_plot_data |>
+  ggplot(aes(x = visitors, y = page, fill = page)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = comma(visitors)),
+            hjust = -0.1, size = 3.5) +
+  labs(title = "Top 10 Pages by Unique Visitors",
+       x = "Unique Visitors",
+       y = "Page") +
+  scale_x_continuous(labels = comma) +
+  scale_fill_manual(values = colors) +
+  expand_limits(x = max(top_pages_plot_data$visitors) * 1.15)
+```
+
+```{r pages_engagement}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+pages_engagement_plot_data <- pages_data |>
+  head(10) |>
+  mutate(page = fct_reorder(page, bounce_rate))
+
+# Recycle colorblind palette colors for all pages
+n_pages <- nrow(pages_engagement_plot_data)
+colors <- rep(colorblind_pal()(8), length.out = n_pages)
+
+# Create plot
+pages_engagement_plot_data |>
+  ggplot(aes(x = bounce_rate, y = page, fill = page)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(round(bounce_rate, 1), "%")),
+            hjust = -0.1, size = 3.5) +
+  labs(title = "Bounce Rate by Page (Top 10)",
+       x = "Bounce Rate (%)",
+       y = "Page") +
+  scale_fill_manual(values = colors) +
+  expand_limits(x = max(pages_engagement_plot_data$bounce_rate) * 1.15)
+```
+
+```{r pages_table}
+#| echo: false
+
+pages_data |>
+  head(10) |>
+  mutate(
+    `Share (%)` = round(visitors / sum(visitors) * 100, 1)
+  ) |>
+  select(
+    Page = page,
+    Visitors = visitors,
+    `Share (%)`,
+    Pageviews = pageviews,
+    `Bounce Rate (%)` = bounce_rate,
+    `Avg Duration (s)` = visit_duration
+  ) |>
+  mutate(`Bounce Rate (%)` = round(`Bounce Rate (%)`, 1)) |>
+  knitr::kable(caption = "Top 10 Pages Statistics")
+```
+
+## Day of Week Analysis
+
+```{r day_of_week}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+day_of_week_data <- timeseries_data |>
+  mutate(
+    weekday = wday(date, label = TRUE, abbr = FALSE),
+    weekday = fct_relevel(weekday, "Monday", "Tuesday", "Wednesday",
+                          "Thursday", "Friday", "Saturday", "Sunday")
+  ) |>
+  group_by(weekday) |>
+  summarise(
+    avg_visitors = mean(visitors, na.rm = TRUE),
+    avg_pageviews = mean(pageviews, na.rm = TRUE)
+  )
+
+# Create plot
+day_of_week_data |>
+  ggplot(aes(x = weekday, y = avg_visitors, fill = weekday)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = comma(round(avg_visitors, 0))),
+            vjust = -0.5, size = 4) +
+  labs(title = "Average Daily Visitors by Day of Week",
+       x = "Day of Week",
+       y = "Average Visitors") +
+  scale_y_continuous(labels = comma) +
+  scale_fill_colorblind() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  expand_limits(y = max(day_of_week_data$avg_visitors) * 1.15)
+```
+
+## Summary Insights
+
+```{r summary_insights_calc}
+#| echo: false
+#| include: false
+
+# Calculate growth metrics
+has_growth_data <- FALSE
+if (nrow(timeseries_data) > 30) {
+  recent_30 <- timeseries_data |>
+    arrange(desc(date)) |>
+    head(30) |>
+    summarise(avg_visitors = mean(visitors, na.rm = TRUE))
+
+  previous_30 <- timeseries_data |>
+    arrange(desc(date)) |>
+    slice(31:60) |>
+    summarise(avg_visitors = mean(visitors, na.rm = TRUE))
+
+  if (nrow(previous_30) > 0 && previous_30$avg_visitors > 0) {
+    growth_rate <- ((recent_30$avg_visitors - previous_30$avg_visitors) /
+                    previous_30$avg_visitors) * 100
+    has_growth_data <- TRUE
+  }
+}
+
+# Calculate device percentage
+device_pct <- round(devices_data$visitors[1] / sum(devices_data$visitors) * 100, 1)
+```
+
+**30-Day Growth Rate:**
+
+- Recent 30 days avg: `r round(recent_30$avg_visitors, 0)` visitors/day
+- Previous 30 days avg: `r round(previous_30$avg_visitors, 0)` visitors/day
+- Growth rate: `r round(growth_rate, 1)`%
+
+**Top Performers:**
+
+- Best traffic source: **`r sources_data$source[1]`** with `r comma(sources_data$visitors[1])` visitors
+- Most popular page: **`r pages_data$page[1]`** with `r comma(pages_data$visitors[1])` visitors
+- Top country: **`r countries_data$country[1]`** with `r comma(countries_data$visitors[1])` visitors
+- Dominant device: **`r devices_data$device[1]`** with `r device_pct`% of visitors
