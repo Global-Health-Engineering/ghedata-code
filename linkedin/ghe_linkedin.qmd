@@ -1,0 +1,125 @@
+---
+title: "GHE on LinkedIn"
+format:
+  html:
+    code-fold: true
+    code-summary: "Display code"
+    toc: true
+    toc-depth: 4
+    toc-location: left
+execute:
+  message: false
+  warning: false
+---
+
+```{r, message=FALSE, include=FALSE}
+library(tidyverse)
+library(lubridate)
+library(ggthemes)
+
+followers  <- read_csv("clean-data/new-followers.csv")
+content_posts  <- read_csv("clean-data/content_posts-overview.csv")
+content_overview  <- read_csv("clean-data/content_posts-overview.csv")
+```
+
+```{r}
+followers |>
+  ggplot(aes(x = date, y = cumulative_followers)) +
+  geom_line() +
+  labs(
+    x = "",
+    y = "Followers\n"
+  ) +
+    theme_few()
+```
+
+```{r}
+content_overview %>%
+  group_by(month = floor_date(date, "week")) %>%
+  summarise(
+    sum_value = sum(likes, na.rm = TRUE),
+    mean_value = mean(likes, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  ggplot(aes(x = month, y = sum_value)) +
+  geom_col() +
+  geom_smooth() +
+  labs(
+    x = "",
+    y = "Likes\n"
+  ) +
+  theme_few()
+```
+
+
+```{r}
+# impressions over time
+content_overview %>%
+  group_by(month = floor_date(date, "week")) %>%
+  summarise(
+    sum_value = sum(impressions, na.rm = TRUE),
+    mean_value = mean(impressions, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  ggplot(aes(x = month, y = sum_value)) +
+  geom_col() +
+  geom_smooth() +
+  labs(
+    x = "",
+    y = "Impressions\n"
+  ) +
+  theme_few()
+```
+
+```{r}
+mean_n_posts  <- content_overview %>%
+  group_by(month = floor_date(date, "month")) %>%
+  count() |> 
+  ungroup() |> 
+  summarise(mean_posts = mean(n)) |> 
+  pull()
+
+content_overview %>%
+  group_by(month = floor_date(date, "month")) %>%
+  count() |> 
+  ggplot(aes(x = month, y = n)) +
+  geom_col() +
+  geom_hline(yintercept = mean_n_posts, color = "red", linetype = "dotted") +
+  labs(
+    x = "",
+    y = "Number of posts per month\n"
+  ) +
+  theme_few()
+```
+
+
+## Top 5: Likes
+
+```{r}
+# filter top 10 posts according to likes
+content_posts |> 
+  slice_max(likes, n = 5) |> 
+  select(post_title, likes) |> 
+  knitr::kable(format = "html")
+```
+
+## Top 5: Reposts
+
+```{r}
+# filter top 10 posts according to likes
+content_posts |> 
+  slice_max(reposts, n = 5) |> 
+  select(post_title, reposts) |> 
+  knitr::kable(format = "html")
+```
+
+## Top 5: Engagement Rate
+
+```{r}
+content_posts |> 
+  slice_max(engagement_rate, n = 5) |> 
+  select(post_title, engagement_rate) |>
+  arrange(desc(engagement_rate)) |>
+  knitr::kable(format = "html")
+```
+
