@@ -1,0 +1,137 @@
+---
+title: "Research Collection"
+format:
+  html:
+    code-fold: true
+    code-summary: "Display code"
+    toc: true
+    toc-depth: 4
+    toc-location: left
+execute:
+  message: false
+  warning: false
+---
+
+```{r}
+library(tidyverse)
+library(ggthemes)
+library(kableExtra)
+
+overview  <- read_csv("raw-data/ghe-research-collection.csv")
+monthly_visits  <- read_csv("raw-data/monthly_visits.csv") |> 
+    mutate(date = parse_date_time(month, orders = "my"))
+```
+
+### Overview
+
+```{r}
+paste0("Total publications: ", nrow(overview))
+
+overview |> 
+    group_by(publication_type) |> 
+    count() |> 
+    arrange(desc(n)) |>  
+    kable(format = "html")
+```
+
+### Number of publications 
+
+```{r}
+overview |> 
+    group_by(year) |> 
+    count() |> 
+    ggplot(aes(x = year, y = n, label = n)) +
+    geom_col() +
+    geom_label() +
+    labs(x = "",
+    y = "Publications\n") +
+        theme_few()
+```
+
+### Publication Types (absolute numbers)
+
+```{r}
+overview |> 
+    group_by(year, publication_type_group) |> 
+    count() |> 
+    ggplot(aes(x = year, y = n, fill = publication_type_group)) +
+    geom_col(position = "stack") +
+    labs(x = "",
+    y = "Publications\n",
+    fill = "Publication Type") +
+        theme_few()
+```
+
+### Publication Types (relative numbers)
+
+```{r}
+overview |> 
+    group_by(year, publication_type_group) |> 
+    count() |> 
+    group_by(year) |> 
+    mutate(rel_freq = n/sum(n))  |> 
+    ggplot(aes(x = year, y = rel_freq, fill = publication_type_group)) +
+    geom_col(position = "stack") +
+    scale_y_continuous(labels = scales::label_percent()) +
+    labs(x = "",
+    y = "Share\n",
+    fill = "Publication Type") +
+        theme_few()
+```
+
+### Licenses
+
+```{r}
+overview |> 
+    group_by(year, license_short_group) |> 
+    count() |> 
+    ggplot(aes(x = year, y = n, fill = license_short_group)) +
+    geom_col(position = "stack") +
+    labs(x = "",
+    y = "Publications\n",
+    fill = "Publication Type") +
+        theme_few()
+```
+
+### DOIs
+
+```{r}
+overview |> 
+    group_by(year, doi_dummy) |> 
+    count() |> 
+    group_by(year) |> 
+    mutate(rel_freq = n/sum(n))  |> 
+    ggplot(aes(x = year, y = rel_freq, fill = doi_dummy)) +
+    geom_col(position = "stack") +
+    scale_y_continuous(labels = scales::label_percent()) +
+    labs(x = "",
+    y = "Publications\n",
+    fill = "Publication Type") +
+        theme_few()
+```
+
+### Visits: Top 10 
+
+```{r}
+monthly_visits |> 
+    group_by(title) |> 
+    summarize(total_visits = sum(visits)) |> 
+    arrange(desc(total_visits)) |> 
+    slice_max(n = 10, order_by = total_visits) |> 
+    kable(format = "html")
+```
+
+### Visits: Individual items
+
+```{r}
+monthly_visits |> 
+    filter(title == "Life cycle assessment of household biogas digesters: A preliminary study on emissions and system interdependencies") |> 
+    ggplot(aes(x = date, y = visits)) +
+    geom_col() +
+    scale_x_date(date_labels = "%b %y",
+        date_breaks = "1 month") +
+    labs(x = "",
+    y = "Visits\n",
+    title = "Life cycle assessment of household biogas digesters: A preliminary study on emissions and system interdependencies") +
+        theme_few()
+```
