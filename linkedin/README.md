@@ -1,6 +1,23 @@
 # GHE on LinkedIn
 
 
+While statistics can be fetched from LinkedIn either via their API or
+manually from the overview page, their scope is limited. Statistics are
+only available for a rolling 12-month window. This means data must be
+collected at regular intervals to avoid gaps.
+
+We download our analytics data manually from LinkedIn roughly every
+three months. On the group dashboard (admin rights required), there are
+three tabs: “Content”, “Visitors”, and “Followers”. These datasets serve
+as the source for our metadata and are stored in `raw-data`. Due to the
+historical limits mentioned above, we continuously append the latest
+data to the existing dataset.
+
+This README must be rendered with the following command in your
+terminal: `quarto render ghe_linkedin.qmd --to gfm --output README.md`
+
+## Followers
+
 ``` r
 followers |>
   ggplot(aes(x = date, y = cumulative_followers)) +
@@ -14,25 +31,9 @@ followers |>
 
 ![](ghe_linkedin_files/figure-commonmark/unnamed-chunk-2-1.png)
 
-``` r
-content_overview %>%
-  group_by(month = floor_date(date, "week")) %>%
-  summarise(
-    sum_value = sum(likes, na.rm = TRUE),
-    mean_value = mean(likes, na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  ggplot(aes(x = month, y = sum_value)) +
-  geom_col() +
-  geom_smooth() +
-  labs(
-    x = "",
-    y = "Likes\n"
-  ) +
-  theme_few()
-```
+## Content
 
-![](ghe_linkedin_files/figure-commonmark/unnamed-chunk-3-1.png)
+### Impressions
 
 ``` r
 # impressions over time
@@ -44,8 +45,8 @@ content_overview %>%
     .groups = "drop"
   ) |>
   ggplot(aes(x = month, y = sum_value)) +
-  geom_col() +
   geom_smooth() +
+  geom_col() +
   labs(
     x = "",
     y = "Impressions\n"
@@ -53,7 +54,54 @@ content_overview %>%
   theme_few()
 ```
 
+![](ghe_linkedin_files/figure-commonmark/unnamed-chunk-3-1.png)
+
+### Likes
+
+``` r
+content_overview %>%
+  group_by(month = floor_date(date, "week")) %>%
+  summarise(
+    sum_value = sum(likes, na.rm = TRUE),
+    mean_value = mean(likes, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  ggplot(aes(x = month, y = sum_value)) +
+  geom_smooth() +
+  geom_col() +
+  labs(
+    x = "",
+    y = "Likes\n"
+  ) +
+  theme_few()
+```
+
 ![](ghe_linkedin_files/figure-commonmark/unnamed-chunk-4-1.png)
+
+### Likes per impression
+
+``` r
+content_overview  |> 
+  group_by(month = floor_date(date, "week")) %>%
+  summarise(
+    sum_likes = sum(likes, na.rm = TRUE),
+    sum_impressions = sum(impressions, na.rm = TRUE),
+    .groups = "drop"
+  ) |> 
+  mutate(likes_per_impression = sum_likes/sum_impressions) |>
+  ggplot(aes(x = month, y = likes_per_impression))  +
+    geom_col() +
+  geom_smooth() +
+  labs(
+    x = "",
+    y = "Likes\n"
+  ) +
+  theme_few()
+```
+
+![](ghe_linkedin_files/figure-commonmark/unnamed-chunk-5-1.png)
+
+### Number of posts
 
 ``` r
 mean_n_posts  <- content_overview %>%
@@ -76,9 +124,27 @@ content_overview %>%
   theme_few()
 ```
 
-![](ghe_linkedin_files/figure-commonmark/unnamed-chunk-5-1.png)
+![](ghe_linkedin_files/figure-commonmark/unnamed-chunk-6-1.png)
 
-## Top 5: Likes
+### Impressions per post
+
+``` r
+content_overview %>%
+  group_by(month = floor_date(date, "week")) %>%
+  summarise(n_posts = n(),
+  impression = sum(impressions)) |> 
+    mutate(impressions_per_post = impression/n_posts) |> 
+  ggplot(aes(x = month, y = impressions_per_post)) +
+  geom_smooth() +
+  geom_col() +
+  labs(x = "",
+  y = "Impressions\n") +
+  theme_few()
+```
+
+![](ghe_linkedin_files/figure-commonmark/unnamed-chunk-7-1.png)
+
+### Top 5: Likes
 
 ``` r
 # filter top 10 posts according to likes
@@ -100,7 +166,7 @@ content_posts |>
 
 </div>
 
-## Top 5: Reposts
+### Top 5: Reposts
 
 ``` r
 # filter top 10 posts according to likes
@@ -123,7 +189,7 @@ content_posts |>
 
 </div>
 
-## Top 5: Engagement Rate
+### Top 5: Engagement Rate
 
 ``` r
 content_posts |> 
