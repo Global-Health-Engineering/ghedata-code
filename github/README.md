@@ -16,6 +16,23 @@ members’ contributions. The fetched datasets are first stored in
 `raw-data`, processed with `data-prep.R`, and made public in
 `clean-data`.
 
+``` mermaid
+flowchart LR
+    A[ghe-repo-overview.sh] -->|GitHub CLI| B[raw-data/repo_list.csv]
+    C[get-repo-info.sh] -->|GitHub API| D[raw-data/contributors.csv]
+    B --> E[data-prep.R]
+    E --> F[clean-data/github_repos.csv<br/>Private]
+    E --> G[clean-data/github_repos_public.csv<br/>Public]
+
+    style A fill:#e1f5ff
+    style C fill:#e1f5ff
+    style B fill:#fff4e1
+    style D fill:#fff4e1
+    style E fill:#e8f5e9
+    style F fill:#ffebee
+    style G fill:#f3e5f5
+```
+
 This README must be rendered with the following command in your
 terminal: `quarto render analysis.qmd --to gfm --output README.md`
 
@@ -66,7 +83,7 @@ github_repos |>
 
 </details>
 
-![](analysis_files/figure-commonmark/unnamed-chunk-2-1.png)
+![](analysis_files/figure-commonmark/unnamed-chunk-3-1.png)
 
 ### Licenses
 
@@ -89,7 +106,7 @@ github_repos |>
 
 </details>
 
-![](analysis_files/figure-commonmark/unnamed-chunk-3-1.png)
+![](analysis_files/figure-commonmark/unnamed-chunk-4-1.png)
 
 ### Main repo languages over the years
 
@@ -114,7 +131,7 @@ github_repos |>
 
 </details>
 
-![](analysis_files/figure-commonmark/unnamed-chunk-4-1.png)
+![](analysis_files/figure-commonmark/unnamed-chunk-5-1.png)
 
 <details class="code-fold">
 <summary>Code</summary>
@@ -135,7 +152,7 @@ github_repos |>
 
 </details>
 
-![](analysis_files/figure-commonmark/unnamed-chunk-5-1.png)
+![](analysis_files/figure-commonmark/unnamed-chunk-6-1.png)
 
 ### Publication Types over the years
 
@@ -154,7 +171,7 @@ github_repos |>
 
 </details>
 
-![](analysis_files/figure-commonmark/unnamed-chunk-6-1.png)
+![](analysis_files/figure-commonmark/unnamed-chunk-7-1.png)
 
 ## Contributors
 

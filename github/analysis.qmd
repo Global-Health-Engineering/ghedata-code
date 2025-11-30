@@ -17,6 +17,24 @@ At GHE, we publish most of our code on GitHub. Contributions include code and/or
 
 With `ghe-repo-overview.sh`, we make use of [GitHub's CLI](https://cli.github.com/) to fetch information on all repositories owned by [Global Health Engineering](https://github.com/Global-Health-Engineering), our GitHub organization. The resulting file `repo_list.csv` is not public, however, as it also contains information on private repositories. The second data source, `contributors.csv`, fetched via GitHub's API with `get-repo-info.sh`, is not public either as it contains information on members' contributions. The fetched datasets are first stored in `raw-data`, processed with `data-prep.R`, and made public in `clean-data`.
 
+```{mermaid}
+%%| fig-cap: "Data Pipeline Flow"
+flowchart LR
+    A[ghe-repo-overview.sh] -->|GitHub CLI| B[raw-data/repo_list.csv]
+    C[get-repo-info.sh] -->|GitHub API| D[raw-data/contributors.csv]
+    B --> E[data-prep.R]
+    E --> F[clean-data/github_repos.csv<br/>Private]
+    E --> G[clean-data/github_repos_public.csv<br/>Public]
+
+    style A fill:#e1f5ff
+    style C fill:#e1f5ff
+    style B fill:#fff4e1
+    style D fill:#fff4e1
+    style E fill:#e8f5e9
+    style F fill:#ffebee
+    style G fill:#f3e5f5
+```
+
 This README must be rendered with the following command in your terminal: `quarto render analysis.qmd --to gfm --output README.md`
 
 ```{r}
