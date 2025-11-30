@@ -1,5 +1,5 @@
 ---
-title: "Research Collection"
+title: "GHE on ETH's Research Collection"
 format:
   html:
     code-fold: true
@@ -12,6 +12,9 @@ execute:
   warning: false
 ---
 
+The [Research Collection](https://library.ethz.ch/en/researching-and-publishing/publishing-and-registering/publishing-in-the-research-collection.html) is ETH Zurich’s repository for publications and research data. It's where ETH Zurich faculty, staff and students can publish the full text of their work or openly share their research data (open access). Since the group was created in 2021, not only research staff of GHE but also students have published their work (theses, software, etc.) on the platform. 
+
+This README must be rendered with the following command in your terminal: `quarto render analysis.qmd --to gfm --output README.md`
 
 
 ```{r}
@@ -36,7 +39,7 @@ overview |>
     kable(format = "html")
 ```
 
-### Number of publications 
+### Number of publications
 
 ```{r}
 overview |> 
@@ -112,7 +115,7 @@ overview |>
         theme_few()
 ```
 
-### Visits: Top 10 
+### Visits: Top 10
 
 ```{r}
 monthly_visits |> 

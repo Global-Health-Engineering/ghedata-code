@@ -1,5 +1,17 @@
-# Research Collection
+# GHE on ETH’s Research Collection
 
+
+The [Research
+Collection](https://library.ethz.ch/en/researching-and-publishing/publishing-and-registering/publishing-in-the-research-collection.html)
+is ETH Zurich’s repository for publications and research data. It’s
+where ETH Zurich faculty, staff and students can publish the full text
+of their work or openly share their research data (open access). Since
+the group was created in 2021, not only research staff of GHE but also
+students have published their work (theses, software, etc.) on the
+platform.
+
+This README must be rendered with the following command in your
+terminal: `quarto render analysis.qmd --to gfm --output README.md`
 
 ``` r
 library(tidyverse)
@@ -163,11 +175,69 @@ monthly_visits |>
 
 </div>
 
+### Total Monthly Visits Over Time
+
+``` r
+monthly_visits |>
+    group_by(date) |>
+    summarize(total_visits = sum(visits)) |>
+    ggplot(aes(x = date, y = total_visits)) +
+    geom_line(size = 1, color = "#2c7fb8") +
+    geom_point(size = 2, color = "#2c7fb8") +
+    scale_x_date(date_labels = "%b %y",
+        date_breaks = "1 month") +
+    labs(x = "",
+    y = "Total Visits\n",
+    title = "Total Monthly Visits to Research Collection") +
+    theme_few() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-9-1.png)
+
+### Publication Type Distribution by License
+
+``` r
+overview |>
+    group_by(publication_type_group, license_short_group) |>
+    count() |>
+    ggplot(aes(x = publication_type_group, y = n, fill = license_short_group)) +
+    geom_col(position = "fill") +
+    scale_y_continuous(labels = scales::label_percent()) +
+    labs(x = "",
+    y = "Share\n",
+    fill = "License") +
+    theme_few() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-10-1.png)
+
+### Visits by Publication Type
+
+``` r
+monthly_visits |>
+    left_join(overview |> select(name, publication_type_group), by = c("title" = "name")) |>
+    filter(!is.na(publication_type_group)) |>
+    group_by(publication_type_group) |>
+    summarize(total_visits = sum(visits)) |>
+    arrange(desc(total_visits)) |>
+    ggplot(aes(x = reorder(publication_type_group, total_visits), y = total_visits, fill = publication_type_group)) +
+    geom_col(show.legend = FALSE) +
+    coord_flip() +
+    labs(x = "",
+    y = "\nTotal Visits",
+    title = "Total Visits by Publication Type") +
+    theme_few()
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-11-1.png)
+
 ### Visits: Individual items
 
 ``` r
-monthly_visits |> 
-    filter(title == "Life cycle assessment of household biogas digesters: A preliminary study on emissions and system interdependencies") |> 
+monthly_visits |>
+    filter(title == "Life cycle assessment of household biogas digesters: A preliminary study on emissions and system interdependencies") |>
     ggplot(aes(x = date, y = visits)) +
     geom_col() +
     scale_x_date(date_labels = "%b %y",
@@ -178,4 +248,49 @@ monthly_visits |>
         theme_few()
 ```
 
-![](analysis_files/figure-commonmark/unnamed-chunk-9-1.png)
+![](analysis_files/figure-commonmark/unnamed-chunk-12-1.png)
+
+``` r
+monthly_visits |>
+    filter(title == "Land use in the Seychelles – Rethinking the Sustainability of Tourism") |>
+    ggplot(aes(x = date, y = visits)) +
+    geom_col() +
+    scale_x_date(date_labels = "%b %y",
+        date_breaks = "1 month") +
+    labs(x = "",
+    y = "Visits\n",
+    title = "Land use in the Seychelles – Rethinking the Sustainability of Tourism") +
+        theme_few()
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-13-1.png)
+
+``` r
+monthly_visits |>
+    filter(title == "Air quality monitoring from open waste and incinerator burning in Cape Maclear, Malawi") |>
+    ggplot(aes(x = date, y = visits)) +
+    geom_col() +
+    scale_x_date(date_labels = "%b %y",
+        date_breaks = "1 month") +
+    labs(x = "",
+    y = "Visits\n",
+    title = "Air quality monitoring from open waste and incinerator burning in Cape Maclear, Malawi") +
+        theme_few()
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-14-1.png)
+
+``` r
+monthly_visits |>
+    filter(title == "Plastic separation - A review") |>
+    ggplot(aes(x = date, y = visits)) +
+    geom_col() +
+    scale_x_date(date_labels = "%b %y",
+        date_breaks = "1 month") +
+    labs(x = "",
+    y = "Visits\n",
+    title = "Plastic separation - A review") +
+        theme_few()
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-15-1.png)
