@@ -32,12 +32,14 @@ github_repos <- read_delim("github/raw-data/repo_list.csv", delim = ";") |>
      )
 
 # Export data without private repos
-
-github_repos_public <- github_repos |> 
-  filter(is_private == "Public")
+github_repos_public <- github_repos |>
+     filter(is_private == "Public")
 
 # Public file
-write_excel_csv(x = github_repos_public, file = "github/clean-data/github_repos_public.csv")
+write_excel_csv(
+     x = github_repos_public,
+     file = "github/clean-data/github_repos_public.csv"
+)
 
 # Private file (added to .gitignore)
 write_excel_csv(x = github_repos, file = "github/clean-data/github_repos.csv")

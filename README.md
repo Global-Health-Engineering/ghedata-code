@@ -1,2 +1,3 @@
-# ghedata-code
-Code for ghedata.
+# Hi!
+
+This is the code repository for [ghedata](https://github.com/global-Health-Engineering/ghedata), an initiative by Global Health Engineering (GHE) at ETH Zürich to make its research metadata public. This repository documents all the code required to fetch metadata from the various sources outlined. It contains a mix of Bash, R, and Python scripts. There is a sub-folder for every source (e.g., LinkedIn, GitHub) where you will find a README displaying a preliminary analysis of the data source to give you an idea of what information the data contains.

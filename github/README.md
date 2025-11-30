@@ -1,26 +1,28 @@
----
-title: "GHE on GitHub"
-author: "Global Health Engineering"
-format:
-  html:
-    toc: true
-    toc-depth: 3
-    toc-location: left
-execute:
-  echo: true
-  warning: false
-  message: false
-code-fold: true
----
+# GHE on GitHub
+Global Health Engineering
 
-At GHE, we publish most of our code on GitHub. Contributions include code and/or data for papers, student theses, hardware, and software.
+At GHE, we publish most of our code on GitHub. Contributions include
+code and/or data for papers, student theses, hardware, and software.
 
-With `ghe-repo-overview.sh`, we make use of [GitHub's CLI](https://cli.github.com/) to fetch information on all repositories owned by [Global Health Engineering](https://github.com/Global-Health-Engineering), our GitHub organization. The resulting file `repo_list.csv` is not public, however, as it also contains information on private repositories. The second data source, `contributors.csv`, fetched via GitHub's API with `get-repo-info.sh`, is not public either as it contains information on members' contributions. The fetched datasets are first stored in `raw-data`, processed with `data-prep.R`, and made public in `clean-data`.
+With `ghe-repo-overview.sh`, we make use of [GitHub’s
+CLI](https://cli.github.com/) to fetch information on all repositories
+owned by [Global Health
+Engineering](https://github.com/Global-Health-Engineering), our GitHub
+organization. The resulting file `repo_list.csv` is not public, however,
+as it also contains information on private repositories. The second data
+source, `contributors.csv`, fetched via GitHub’s API with
+`get-repo-info.sh`, is not public either as it contains information on
+members’ contributions. The fetched datasets are first stored in
+`raw-data`, processed with `data-prep.R`, and made public in
+`clean-data`.
 
-This README must be rendered with the following command in your terminal: `quarto render analysis.qmd --to gfm --output README.md`
+This README must be rendered with the following command in your
+terminal: `quarto render analysis.qmd --to gfm --output README.md`
 
-```{r}
-#| label: setup
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 library(tidyverse)
 library(scales)
 library(knitr)
@@ -30,15 +32,25 @@ library(ggthemes)
 theme_set(theme_few())
 ```
 
+</details>
+
 ## Repositories
 
-```{r}
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 github_repos <- read_csv("clean-data/github_repos.csv")
 ```
 
+</details>
+
 ### Private/public repositories
 
-```{r}
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 github_repos |>
      count(created_year, is_private) |>
      ggplot(aes(x = created_year, y = n, fill = is_private)) +
@@ -50,12 +62,18 @@ github_repos |>
      ) +
      theme_few() +
      theme(panel.grid = element_blank())
-
 ```
+
+</details>
+
+![](analysis_files/figure-commonmark/unnamed-chunk-2-1.png)
 
 ### Licenses
 
-```{r}
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 github_repos |>
      count(created_year, license_dummy) |>
      ggplot(aes(x = created_year, y = n, fill = license_dummy)) +
@@ -69,9 +87,16 @@ github_repos |>
      theme(panel.grid = element_blank())
 ```
 
+</details>
+
+![](analysis_files/figure-commonmark/unnamed-chunk-3-1.png)
+
 ### Main repo languages over the years
 
-```{r}
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 github_repos |>
      filter(publication_type != "Student paper") |>
      count(created_year, primary_language_ext2) |>
@@ -87,7 +112,14 @@ github_repos |>
      theme(panel.grid = element_blank())
 ```
 
-```{r}
+</details>
+
+![](analysis_files/figure-commonmark/unnamed-chunk-4-1.png)
+
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 github_repos |>
      filter(publication_type != "Student paper") |>
      count(created_year, primary_language_ext2) |> 
@@ -101,9 +133,16 @@ github_repos |>
        fill = "Main repo language")
 ```
 
+</details>
+
+![](analysis_files/figure-commonmark/unnamed-chunk-5-1.png)
+
 ### Publication Types over the years
 
-```{r}
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 github_repos |>
      count(created_year, publication_type) |>
      ggplot(aes(x = created_year, y = n, fill = publication_type)) +
@@ -113,17 +152,27 @@ github_repos |>
      theme(panel.grid = element_blank())
 ```
 
+</details>
+
+![](analysis_files/figure-commonmark/unnamed-chunk-6-1.png)
+
 ## Contributors
 
-```{r}
-#| label: load-data
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 contributors <- read_csv("raw-data/contributors.csv")
 ```
 
+</details>
+
 ### Top contributors by total commits
 
-```{r}
-#| label: top-contributors-total
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 top_contributors <- contributors %>%
   group_by(login) %>%
   summarise(
@@ -139,12 +188,27 @@ kable(top_contributors,
       col.names = c("Contributor", "Total Contributions", "Repositories"))
 ```
 
-```{r}
-#| label: fig-top-contributors
-#| fig-cap: "Top 10 Contributors by Total Contributions Across All Repositories"
-#| fig-height: 6
-#| fig-width: 10
+</details>
 
+| Contributor     | Total Contributions | Repositories |
+|:----------------|--------------------:|-------------:|
+| larnsce         |                 722 |           36 |
+| silas-schweizer |                 463 |            1 |
+| massarin        |                 405 |            7 |
+| jaktk           |                 356 |           30 |
+| Valentin-Hirsch |                 208 |            1 |
+| n-raspi         |                 195 |            5 |
+| bonschorno      |                  84 |           16 |
+| Gluflex         |                  83 |            1 |
+| salonivijay     |                  82 |            6 |
+| myesaya         |                  53 |            1 |
+
+Top 10 Contributors by Total Contributions
+
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 ggplot(top_contributors, aes(x = reorder(login, total_contributions), 
                               y = total_contributions)) +
   geom_col(fill = "#2E86AB", alpha = 0.8) +
@@ -167,10 +231,15 @@ ggplot(top_contributors, aes(x = reorder(login, total_contributions),
                      labels = comma)
 ```
 
+</details>
+![](analysis_files/figure-commonmark/fig-top-contributors-1.png)
+
 ### Average Number of Contributors per Repository
 
-```{r}
-#| label: avg-contributors
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 repo_stats <- contributors %>%
   group_by(repository) %>%
   summarise(
@@ -196,12 +265,21 @@ summary_stats <- tibble(
 kable(summary_stats, caption = "Repository Contributor Statistics")
 ```
 
-```{r}
-#| label: fig-contributor-distribution
-#| fig-cap: "Distribution of Number of Contributors per Repository"
-#| fig-height: 5
-#| fig-width: 8
+</details>
 
+| Metric                              | Value |
+|:------------------------------------|------:|
+| Average Contributors per Repository |  1.51 |
+| Median Contributors per Repository  |  1.00 |
+| Total Unique Contributors           | 30.00 |
+| Total Repositories                  | 84.00 |
+
+Repository Contributor Statistics
+
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 ggplot(repo_stats, aes(x = num_contributors)) +
   geom_histogram(binwidth = 1, fill = "#2E86AB", alpha = 0.8, color = "white") +
   geom_vline(xintercept = avg_contributors, 
@@ -226,10 +304,15 @@ ggplot(repo_stats, aes(x = num_contributors)) +
   )
 ```
 
+</details>
+![](analysis_files/figure-commonmark/fig-contributor-distribution-1.png)
+
 ### Contributors by Number of Repositories
 
-```{r}
-#| label: contributors-by-repo-count
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 contributors_by_repos <- contributors %>%
   group_by(login) %>%
   summarise(
@@ -245,12 +328,27 @@ kable(contributors_by_repos,
       col.names = c("Contributor", "Repositories", "Total Contributions", "Avg per Repo"))
 ```
 
-```{r}
-#| label: fig-contributors-by-repos
-#| fig-cap: "Top 10 Contributors by Number of Repositories"
-#| fig-height: 6
-#| fig-width: 10
+</details>
 
+| Contributor    | Repositories | Total Contributions | Avg per Repo |
+|:---------------|-------------:|--------------------:|-------------:|
+| larnsce        |           36 |                 722 |         20.1 |
+| jaktk          |           30 |                 356 |         11.9 |
+| bonschorno     |           16 |                  84 |          5.2 |
+| massarin       |            7 |                 405 |         57.9 |
+| salonivijay    |            6 |                  82 |         13.7 |
+| n-raspi        |            5 |                 195 |         39.0 |
+| TKZ10          |            3 |                  10 |          3.3 |
+| sebastian-loos |            2 |                  31 |         15.5 |
+| Derpocrat      |            1 |                  15 |         15.0 |
+| Gluflex        |            1 |                  83 |         83.0 |
+
+Top 10 Contributors by Number of Repositories
+
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 ggplot(contributors_by_repos, aes(x = reorder(login, num_repositories), 
                                    y = num_repositories)) +
   geom_col(fill = "#A23B72", alpha = 0.8) +
@@ -274,10 +372,15 @@ ggplot(contributors_by_repos, aes(x = reorder(login, num_repositories),
   scale_y_continuous(expand = expansion(mult = c(0, 0.1)))
 ```
 
+</details>
+![](analysis_files/figure-commonmark/fig-contributors-by-repos-1.png)
+
 ### Contribution Concentration Analysis
 
-```{r}
-#| label: contribution-concentration
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 # Calculate cumulative contribution percentage
 contribution_concentration <- contributors %>%
   group_by(login) %>%
@@ -296,17 +399,29 @@ contributors_for_80 <- min(which(contribution_concentration$cumulative_percentag
 cat(paste("Top", contributors_for_50, "contributors (", 
           round(contributors_for_50/n_distinct(contributors$login)*100, 1), 
           "% of people) make 50% of all contributions\n"))
+```
+
+</details>
+
+    Top 3 contributors ( 10 % of people) make 50% of all contributions
+
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 cat(paste("Top", contributors_for_80, "contributors (",
           round(contributors_for_80/n_distinct(contributors$login)*100, 1),
           "% of people) make 80% of all contributions\n"))
 ```
 
-```{r}
-#| label: fig-lorenz-curve
-#| fig-cap: "Lorenz Curve of Contribution Distribution"
-#| fig-height: 6
-#| fig-width: 8
+</details>
 
+    Top 6 contributors ( 20 % of people) make 80% of all contributions
+
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 # Prepare data for Lorenz curve
 lorenz_data <- contribution_concentration %>%
   mutate(
@@ -337,86 +452,38 @@ ggplot(lorenz_data, aes(x = contributor_percentage, y = cumulative_percentage)) 
   scale_y_continuous(breaks = seq(0, 100, 20))
 ```
 
+</details>
+![](analysis_files/figure-commonmark/fig-lorenz-curve-1.png)
+
 ### Time-Based Insights (Repository Age Analysis)
-
-```{r, include=FALSE, eval=FALSE}
-#| label: repo-freshness
-# Load repos.csv to get creation dates
-repos_info <- read_delim("repos.csv", delim = ";", show_col_types = FALSE)
-
-# Parse dates and calculate age
-repos_with_age <- repos_info %>%
-  mutate(
-    createdAt = as.Date(createdAt),
-    updatedAt = as.Date(updatedAt),
-    age_days = as.numeric(Sys.Date() - createdAt),
-    days_since_update = as.numeric(Sys.Date() - updatedAt)
-  ) %>%
-  select(name, createdAt, updatedAt, age_days, days_since_update)
-
-# Join with contributor data
-repo_activity <- repo_stats %>%
-  left_join(repos_with_age, by = c("repository" = "name")) %>%
-  filter(!is.na(age_days))
-
-# Correlation between age and contributors
-cor_age_contributors <- cor(repo_activity$age_days, repo_activity$num_contributors, use = "complete.obs")
-
-cat(paste("Correlation between repository age and number of contributors:", 
-          round(cor_age_contributors, 3), "\n"))
-
-# Recently active repositories
-recent_repos <- repo_activity %>%
-  filter(days_since_update < 30) %>%
-  arrange(desc(num_contributors)) %>%
-  head(5)
-
-cat("\nMost collaborative repositories updated in the last 30 days:\n")
-kable(recent_repos %>% select(repository, num_contributors, days_since_update),
-      col.names = c("Repository", "Contributors", "Days Since Update"))
-```
-
-```{r, include=FALSE, eval=FALSE}
-#| label: fig-age-vs-contributors
-#| fig-cap: "Repository Age vs Number of Contributors"
-#| fig-height: 6
-#| fig-width: 10
-
-ggplot(repo_activity, aes(x = age_days/365, y = num_contributors)) +
-  geom_point(aes(size = total_contributions, color = days_since_update < 90), 
-             alpha = 0.6) +
-  geom_smooth(method = "loess", se = TRUE, color = "#2E86AB") +
-  scale_size_continuous(name = "Total\nContributions", range = c(2, 10)) +
-  scale_color_manual(values = c("gray50", "#F18F01"), 
-                     labels = c("Inactive (90+ days)", "Active (<90 days)"),
-                     name = "Activity Status") +
-  labs(
-    title = "Repository Maturity vs Collaboration",
-    subtitle = "How repository age relates to number of contributors",
-    x = "Repository Age (years)",
-    y = "Number of Contributors"
-  ) +
-  theme_minimal()
-```
 
 ## Summary
 
-This analysis examined `r n_distinct(contributors$repository)` repositories with a total of `r n_distinct(contributors$login)` unique contributors.
+This analysis examined 84 repositories with a total of 30 unique
+contributors.
 
 ### Key findings:
 
--   The average repository has **`r round(avg_contributors, 1)` contributors**
--   The top contributor (`r top_contributors$login[1]`) has made **`r format(top_contributors$total_contributions[1], big.mark = ",")` contributions** across all repositories
--   The most collaborative contributor (`r contributors_by_repos$login[1]`) has contributed to **`r contributors_by_repos$num_repositories[1]` different repositories**
+- The average repository has **1.5 contributors**
+- The top contributor (larnsce) has made **722 contributions** across
+  all repositories
+- The most collaborative contributor (larnsce) has contributed to **36
+  different repositories**
 
 ### Interesting patterns discovered:
 
--   **Contribution inequality**: Just `r contributors_for_50` people (`r round(contributors_for_50/n_distinct(contributors$login)*100, 1)`% of all contributors) account for 50% of all contributions
+- **Contribution inequality**: Just 3 people (10% of all contributors)
+  account for 50% of all contributions
 
-```{r}
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
 #- **Repository age correlation**: The correlation between repository age and number of contributors is `r round(cor_age_contributors, 2)`, suggesting `r ifelse(cor_age_contributors > 0.3, "older repositories tend to attract more contributors", "age doesn't strongly predict contributor count")`
 
 # - **Repository collaboration**: `r round(multi_repos/nrow(repo_stats)*100, 1)`% of repositories have multiple contributors
 
 #- **Power contributors**: `r sum(contributor_categories$category == "Power Contributors (100+ commits)")` individuals have made 100+ contributions each
 ```
+
+</details>
