@@ -430,7 +430,7 @@ lorenz_data <- contribution_concentration %>%
   add_row(contributor_percentage = 0, cumulative_percentage = 0, .before = 1)
 
 ggplot(lorenz_data, aes(x = contributor_percentage, y = cumulative_percentage)) +
-  geom_line(size = 1.5, color = "#2E86AB") +
+  geom_line(linewidth = 1.5, color = "#2E86AB") +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray50") +
   geom_ribbon(aes(ymin = contributor_percentage, ymax = cumulative_percentage), 
               fill = "#2E86AB", alpha = 0.2) +
@@ -455,8 +455,6 @@ ggplot(lorenz_data, aes(x = contributor_percentage, y = cumulative_percentage)) 
 </details>
 ![](analysis_files/figure-commonmark/fig-lorenz-curve-1.png)
 
-### Time-Based Insights (Repository Age Analysis)
-
 ## Summary
 
 This analysis examined 84 repositories with a total of 30 unique
@@ -474,16 +472,3 @@ contributors.
 
 - **Contribution inequality**: Just 3 people (10% of all contributors)
   account for 50% of all contributions
-
-<details class="code-fold">
-<summary>Code</summary>
-
-``` r
-#- **Repository age correlation**: The correlation between repository age and number of contributors is `r round(cor_age_contributors, 2)`, suggesting `r ifelse(cor_age_contributors > 0.3, "older repositories tend to attract more contributors", "age doesn't strongly predict contributor count")`
-
-# - **Repository collaboration**: `r round(multi_repos/nrow(repo_stats)*100, 1)`% of repositories have multiple contributors
-
-#- **Power contributors**: `r sum(contributor_categories$category == "Power Contributors (100+ commits)")` individuals have made 100+ contributions each
-```
-
-</details>

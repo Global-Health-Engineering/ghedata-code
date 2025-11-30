@@ -8,7 +8,7 @@
 
 <meta name="author" content="Global Health Engineering">
 
-<title>GHE GitHub Repository Analysis</title>
+<title>GHE on GitHub</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -109,7 +109,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">GHE GitHub Repository Analysis</h1>
+<h1 class="title">GHE on GitHub</h1>
 </div>
 
 
@@ -132,6 +132,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<p>At GHE, we publish most of our code on GitHub. Contributions include code and/or data for papers, student theses, hardware, and software.</p>
+<p>With <code>ghe-repo-overview.sh</code>, we make use of <a href="https://cli.github.com/">GitHub’s CLI</a> to fetch information on all repositories owned by <a href="https://github.com/Global-Health-Engineering">Global Health Engineering</a>, our GitHub organization. The resulting file <code>repo_list.csv</code> is not public, however, as it also contains information on private repositories. The second data source, <code>contributors.csv</code>, fetched via GitHub’s API with <code>get-repo-info.sh</code>, is not public either as it contains information on members’ contributions. The fetched datasets are first stored in <code>raw-data</code>, processed with <code>data-prep.R</code>, and made public in <code>clean-data</code>.</p>
+<p>This README must be rendered with the following command in your terminal: <code>quarto render analysis.qmd --to gfm --output README.md</code></p>
 <div class="cell">
 <details class="code-fold">
 <summary>Code</summary>

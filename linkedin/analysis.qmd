@@ -14,9 +14,45 @@ execute:
 
 While statistics can be fetched from LinkedIn either via their API or manually from the overview page, their scope is limited. Statistics are only available for a rolling 12-month window. This means data must be collected at regular intervals to avoid gaps.
 
+## Data Processing Pipeline
+
+::: {style="width: 100%; max-width: 1200px;"}
+```{mermaid}
+%%| fig-width: 10
+flowchart TD
+    raw["raw-data/"]
+
+    subgraph script["data-prep.R"]
+        p1["Content Metrics Processing"]
+        p2["All Posts Processing"]
+        p3["New Followers Processing"]
+    end
+
+    subgraph clean["clean-data/"]
+        c1["content-overview.csv"]
+        c2["content_posts-overview.csv"]
+        c3["new-followers.csv"]
+    end
+
+    raw --> p1
+    raw --> p2
+    raw --> p3
+
+    p1 --> c1
+    p2 --> c2
+    p3 --> c3
+
+    c1 & c2 & c3 --> analysis["analysis.qmd"]
+
+    style raw fill:#e1f5ff
+    style script fill:#fff4e1
+    style clean fill:#e8f5e9
+```
+:::
+
 We download our analytics data manually from LinkedIn roughly every three months. On the group dashboard (admin rights required), there are three tabs: "Content", "Visitors", and "Followers". These datasets serve as the source for our metadata and are stored in `raw-data`. Due to the historical limits mentioned above, we continuously append the latest data to the existing dataset.
 
-This README must be rendered with the following command in your terminal: `quarto render ghe_linkedin.qmd --to gfm --output README.md`
+This README must be rendered with the following command in your terminal: `quarto render analysis.qmd --to gfm --output README.md`
 
 ## Followers
 

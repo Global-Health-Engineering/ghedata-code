@@ -67,6 +67,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="analysis_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="analysis_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="analysis_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="analysis_files/libs/quarto-diagram/mermaid.min.js"></script>
+<script src="analysis_files/libs/quarto-diagram/mermaid-init.js"></script>
+<link href="analysis_files/libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
 
 </head>
@@ -79,7 +82,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
-  <li><a href="#followers" id="toc-followers" class="nav-link active" data-scroll-target="#followers">Followers</a></li>
+  <li><a href="#data-processing-pipeline" id="toc-data-processing-pipeline" class="nav-link active" data-scroll-target="#data-processing-pipeline">Data Processing Pipeline</a></li>
+  <li><a href="#followers" id="toc-followers" class="nav-link" data-scroll-target="#followers">Followers</a></li>
   <li><a href="#content" id="toc-content" class="nav-link" data-scroll-target="#content">Content</a>
   <ul>
   <li><a href="#impressions" id="toc-impressions" class="nav-link" data-scroll-target="#impressions">Impressions</a></li>
@@ -118,8 +122,52 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <p>While statistics can be fetched from LinkedIn either via their API or manually from the overview page, their scope is limited. Statistics are only available for a rolling 12-month window. This means data must be collected at regular intervals to avoid gaps.</p>
+<section id="data-processing-pipeline" class="level2">
+<h2 class="anchored" data-anchor-id="data-processing-pipeline">Data Processing Pipeline</h2>
+<div style="width: 100%; max-width: 1200px;">
+<div class="cell" data-fig-width="10" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart TD
+    raw["raw-data/"]
+
+    subgraph script["data-prep.R"]
+        p1["Content Metrics Processing"]
+        p2["All Posts Processing"]
+        p3["New Followers Processing"]
+    end
+
+    subgraph clean["clean-data/"]
+        c1["content-overview.csv"]
+        c2["content_posts-overview.csv"]
+        c3["new-followers.csv"]
+    end
+
+    raw --&gt; p1
+    raw --&gt; p2
+    raw --&gt; p3
+
+    p1 --&gt; c1
+    p2 --&gt; c2
+    p3 --&gt; c3
+
+    c1 &amp; c2 &amp; c3 --&gt; analysis["analysis.qmd"]
+
+    style raw fill:#e1f5ff
+    style script fill:#fff4e1
+    style clean fill:#e8f5e9
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+</div>
 <p>We download our analytics data manually from LinkedIn roughly every three months. On the group dashboard (admin rights required), there are three tabs: “Content”, “Visitors”, and “Followers”. These datasets serve as the source for our metadata and are stored in <code>raw-data</code>. Due to the historical limits mentioned above, we continuously append the latest data to the existing dataset.</p>
 <p>This README must be rendered with the following command in your terminal: <code>quarto render ghe_linkedin.qmd --to gfm --output README.md</code></p>
+</section>
 <section id="followers" class="level2">
 <h2 class="anchored" data-anchor-id="followers">Followers</h2>
 <div class="cell">
@@ -137,7 +185,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="analysis_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="analysis_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -170,7 +218,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="analysis_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="analysis_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -200,7 +248,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="analysis_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="analysis_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -231,7 +279,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="analysis_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="analysis_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -264,7 +312,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="analysis_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="analysis_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -290,7 +338,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="analysis_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="analysis_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>

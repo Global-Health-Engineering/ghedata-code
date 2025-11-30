@@ -315,7 +315,7 @@ lorenz_data <- contribution_concentration %>%
   add_row(contributor_percentage = 0, cumulative_percentage = 0, .before = 1)
 
 ggplot(lorenz_data, aes(x = contributor_percentage, y = cumulative_percentage)) +
-  geom_line(size = 1.5, color = "#2E86AB") +
+  geom_line(linewidth = 1.5, color = "#2E86AB") +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "gray50") +
   geom_ribbon(aes(ymin = contributor_percentage, ymax = cumulative_percentage), 
               fill = "#2E86AB", alpha = 0.2) +
@@ -337,68 +337,6 @@ ggplot(lorenz_data, aes(x = contributor_percentage, y = cumulative_percentage)) 
   scale_y_continuous(breaks = seq(0, 100, 20))
 ```
 
-### Time-Based Insights (Repository Age Analysis)
-
-```{r, include=FALSE, eval=FALSE}
-#| label: repo-freshness
-# Load repos.csv to get creation dates
-repos_info <- read_delim("repos.csv", delim = ";", show_col_types = FALSE)
-
-# Parse dates and calculate age
-repos_with_age <- repos_info %>%
-  mutate(
-    createdAt = as.Date(createdAt),
-    updatedAt = as.Date(updatedAt),
-    age_days = as.numeric(Sys.Date() - createdAt),
-    days_since_update = as.numeric(Sys.Date() - updatedAt)
-  ) %>%
-  select(name, createdAt, updatedAt, age_days, days_since_update)
-
-# Join with contributor data
-repo_activity <- repo_stats %>%
-  left_join(repos_with_age, by = c("repository" = "name")) %>%
-  filter(!is.na(age_days))
-
-# Correlation between age and contributors
-cor_age_contributors <- cor(repo_activity$age_days, repo_activity$num_contributors, use = "complete.obs")
-
-cat(paste("Correlation between repository age and number of contributors:", 
-          round(cor_age_contributors, 3), "\n"))
-
-# Recently active repositories
-recent_repos <- repo_activity %>%
-  filter(days_since_update < 30) %>%
-  arrange(desc(num_contributors)) %>%
-  head(5)
-
-cat("\nMost collaborative repositories updated in the last 30 days:\n")
-kable(recent_repos %>% select(repository, num_contributors, days_since_update),
-      col.names = c("Repository", "Contributors", "Days Since Update"))
-```
-
-```{r, include=FALSE, eval=FALSE}
-#| label: fig-age-vs-contributors
-#| fig-cap: "Repository Age vs Number of Contributors"
-#| fig-height: 6
-#| fig-width: 10
-
-ggplot(repo_activity, aes(x = age_days/365, y = num_contributors)) +
-  geom_point(aes(size = total_contributions, color = days_since_update < 90), 
-             alpha = 0.6) +
-  geom_smooth(method = "loess", se = TRUE, color = "#2E86AB") +
-  scale_size_continuous(name = "Total\nContributions", range = c(2, 10)) +
-  scale_color_manual(values = c("gray50", "#F18F01"), 
-                     labels = c("Inactive (90+ days)", "Active (<90 days)"),
-                     name = "Activity Status") +
-  labs(
-    title = "Repository Maturity vs Collaboration",
-    subtitle = "How repository age relates to number of contributors",
-    x = "Repository Age (years)",
-    y = "Number of Contributors"
-  ) +
-  theme_minimal()
-```
-
 ## Summary
 
 This analysis examined `r n_distinct(contributors$repository)` repositories with a total of `r n_distinct(contributors$login)` unique contributors.
@@ -412,11 +350,3 @@ This analysis examined `r n_distinct(contributors$repository)` repositories with
 ### Interesting patterns discovered:
 
 -   **Contribution inequality**: Just `r contributors_for_50` people (`r round(contributors_for_50/n_distinct(contributors$login)*100, 1)`% of all contributors) account for 50% of all contributions
-
-```{r}
-#- **Repository age correlation**: The correlation between repository age and number of contributors is `r round(cor_age_contributors, 2)`, suggesting `r ifelse(cor_age_contributors > 0.3, "older repositories tend to attract more contributors", "age doesn't strongly predict contributor count")`
-
-# - **Repository collaboration**: `r round(multi_repos/nrow(repo_stats)*100, 1)`% of repositories have multiple contributors
-
-#- **Power contributors**: `r sum(contributor_categories$category == "Power Contributors (100+ commits)")` individuals have made 100+ contributions each
-```
