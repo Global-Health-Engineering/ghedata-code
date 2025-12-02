@@ -14,37 +14,11 @@ library(here)
 # Set to eval: true to extract and transform data before rendering
 # This chunk extracts data from Zenodo API and then transforms it
 
-# Extract data 
-result_extract <- system2(
-  "Rscript",
-  args = c(here("zenodo", "scripts", "01_extract_zenodo_data.R")),
-  stdout = TRUE,
-  stderr = TRUE
-)
-
-if (!is.null(attr(result_extract, "status")) && attr(result_extract, "status") != 0) {
-  cat("Error extracting data:\n")
-  cat(paste(result_extract, collapse = "\n"), "\n")
-  stop("Failed to extract Zenodo data")
-}
-
-cat(paste(result_extract, collapse = "\n"), "\n\n")
+# Extract data
+source(here("zenodo", "scripts", "01_extract_zenodo_data.R"))
 
 # Transform the extracted data
-result_transform <- system2(
-  "Rscript",
-  args = c(here("zenodo", "scripts", "02_transform_zenodo_data.R")),
-  stdout = TRUE,
-  stderr = TRUE
-)
-
-if (!is.null(attr(result_transform, "status")) && attr(result_transform, "status") != 0) {
-  cat("Error transforming data:\n")
-  cat(paste(result_transform, collapse = "\n"), "\n")
-  stop("Failed to transform Zenodo data")
-}
-
-cat(paste(result_transform, collapse = "\n"), "\n")
+source(here("zenodo", "scripts", "02_transform_zenodo_data.R"))
 ```
 
 ```{r setup}
