@@ -15,10 +15,10 @@ library(here)
 # This chunk extracts data from Zenodo API and then transforms it
 
 # Extract data
-source(here("zenodo", "scripts", "01_extract_zenodo_data.R"))
+source(here("scripts", "01_extract_zenodo_data.R"))
 
 # Transform the extracted data
-source(here("zenodo", "scripts", "02_transform_zenodo_data.R"))
+source(here("scripts", "02_transform_zenodo_data.R"))
 ```
 
 ```{r setup}
@@ -30,7 +30,7 @@ library(ggthemes)
 library(here)
 
 # Load data
-load(here("zenodo", "data", "zenodo_ghe_data.rda"))
+load(here("data", "zenodo_ghe_data.rda"))
 
 # Set theme
 theme_set(theme_minimal())

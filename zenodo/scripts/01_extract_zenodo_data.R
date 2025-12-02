@@ -3,7 +3,7 @@ library(tidyverse)
 library(here)
 
 # Read ORCID IDs
-orcids <- read_csv(here("zenodo", "data", "orcids.csv"), show_col_types = FALSE)
+orcids <- read_csv(here("data", "orcids.csv"), show_col_types = FALSE)
 
 # Initialize Zenodo client
 zenodo <- ZenodoManager$new(logger = NULL)
@@ -54,6 +54,6 @@ unique_records <- all_records[!duplicated(map_chr(all_records,
                                                    \(rec) rec$metadata$doi %||% rec$id))]
 
 # Save raw data
-save(unique_records, file = here("zenodo", "data", "zenodo_raw.rda"))
+save(unique_records, file = here("data", "zenodo_raw.rda"))
 
 cat("Extracted", length(unique_records), "unique records from Zenodo\n")

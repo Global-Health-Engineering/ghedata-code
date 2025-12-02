@@ -3,7 +3,7 @@ library(lubridate)
 library(here)
 
 # Load raw data
-load(here("zenodo", "data", "zenodo_raw.rda"))
+load(here("data", "zenodo_raw.rda"))
 
 # Helper function to safely extract nested fields
 safe_extract <- function(x, default = NA) {
@@ -235,6 +235,6 @@ if (nrow(github_data) > 0) {
 # Save all processed data
 save(zenodo_data, authors_data, keywords_data, subjects_data,
      related_identifiers_data, funding_data, communities_data, github_data,
-     file = here("zenodo", "data", "zenodo_ghe_data.rda"))
+     file = here("data", "zenodo_ghe_data.rda"))
 
 cat("Transformed data with", nrow(zenodo_data), "records from 2021 onwards\n")
