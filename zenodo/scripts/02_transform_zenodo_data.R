@@ -48,6 +48,9 @@ zenodo_data <- unique_records |>
       NA_character_
     }
 
+    # Extract stats
+    stats <- rec$stats
+
     tibble(
       record_id = safe_extract(rec$id),
       doi = doi,
@@ -62,7 +65,11 @@ zenodo_data <- unique_records |>
       n_versions = ifelse(is.null(rec$versions$index), 1, rec$versions$index),
       total_size_mb = sum(map_dbl(files, \(f) {
         if (is.null(f$filesize)) 0 else as.numeric(f$filesize)
-      })) / 1e6
+      })) / 1e6,
+      views = ifelse(is.null(stats$all_versions.views), 0, stats$all_versions.views),
+      unique_views = ifelse(is.null(stats$all_versions.unique_views), 0, stats$all_versions.unique_views),
+      downloads = ifelse(is.null(stats$all_versions.downloads), 0, stats$all_versions.downloads),
+      unique_downloads = ifelse(is.null(stats$all_versions.unique_downloads), 0, stats$all_versions.unique_downloads)
     )
   }) |>
   bind_rows() |>

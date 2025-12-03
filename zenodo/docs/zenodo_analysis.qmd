@@ -1,14 +1,35 @@
 ---
-title: "Zenodo Research Group Publications Analysis"
-format: html
-editor: source
+title: "GHE on Zenodo"
+author: "Global Health Engineering"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-location: left
 execute:
-  echo: false
+  echo: true
+  warning: false
+  message: false
+code-fold: true
 ---
+
+```{r setup}
+library(tidyverse)
+library(lubridate)
+library(scales)
+library(knitr)
+library(here)
+
+# Load data
+load(here("data", "zenodo_ghe_data.rda"))
+
+# Set theme for all plots
+theme_set(theme_minimal())
+```
 
 ```{r extract_data}
 #| include: false
-#| eval: false
+#| eval: true
 
 library(here)
 # Set to eval: true to extract and transform data before rendering
@@ -19,21 +40,6 @@ source(here("scripts", "01_extract_zenodo_data.R"))
 
 # Transform the extracted data
 source(here("scripts", "02_transform_zenodo_data.R"))
-```
-
-```{r setup}
-#| include: false
-library(tidyverse)
-library(lubridate)
-library(scales)
-library(ggthemes)
-library(here)
-
-# Load data
-load(here("data", "zenodo_ghe_data.rda"))
-
-# Set theme
-theme_set(theme_minimal())
 ```
 
 ## Overview
@@ -52,21 +58,25 @@ This analysis covers **`r nrow(zenodo_data)` publications** from the research gr
 #| fig-width: 10
 #| fig-height: 6
 
-# Prepare data
+# Prepare data - create complete sequence of months and fill missing with 0
 trends_data <- zenodo_data |>
   mutate(year_month = floor_date(publication_date, "month")) |>
-  count(year_month)
+  count(year_month) |>
+  complete(
+    year_month = seq(min(year_month), max(year_month), by = "month"),
+    fill = list(n = 0)
+  )
 
 # Create plot
 trends_data |>
   ggplot(aes(x = year_month, y = n)) +
-  geom_line(color = colorblind_pal()(8)[1], linewidth = 1) +
-  geom_point(color = colorblind_pal()(8)[1], size = 2) +
-  labs(title = "Publications Over Time",
-       x = "Date",
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(title = "Monthly Publications",
+       x = "Month",
        y = "Number of Publications") +
-  scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  scale_x_date(date_breaks = "3 months", date_labels = "%b\n%y") +
+  ylim(0, max(trends_data$n))
 ```
 
 ```{r trends_by_type}
@@ -87,8 +97,7 @@ trends_by_type_data |>
        x = "Year",
        y = "Number of Publications",
        fill = "Resource Type") +
-  scale_fill_colorblind() +
-  scale_x_continuous(breaks = \(x) seq(floor(min(x)), ceiling(max(x)), 1))
+    scale_x_continuous(breaks = \(x) seq(floor(min(x)), ceiling(max(x)), 1))
 ```
 
 ## Resource Types
@@ -109,9 +118,82 @@ resource_types_data |>
   geom_col(show.legend = FALSE) +
   labs(title = "Distribution of Resource Types",
        x = "Number of Publications",
-       y = "Resource Type") +
-  scale_fill_colorblind()
+       y = "Resource Type")
 ```
+
+## Views and Downloads
+
+```{r views_downloads_stats}
+#| echo: false
+#| include: false
+
+total_views <- sum(zenodo_data$unique_views, na.rm = TRUE)
+total_downloads <- sum(zenodo_data$unique_downloads, na.rm = TRUE)
+```
+
+**Summary:**
+
+- Total unique views: `r format(total_views, big.mark = ",")`
+- Total unique downloads: `r format(total_downloads, big.mark = ",")`
+
+```{r views_by_type}
+#| fig-width: 10
+#| fig-height: 6
+
+zenodo_data |>
+  filter(!is.na(resource_type)) |>
+  group_by(resource_type) |>
+  summarise(
+    unique_views = sum(unique_views, na.rm = TRUE),
+    unique_downloads = sum(unique_downloads, na.rm = TRUE)
+  ) |>
+  pivot_longer(cols = c(unique_views, unique_downloads),
+               names_to = "metric",
+               values_to = "count") |>
+  mutate(metric = ifelse(metric == "unique_views", "Unique Views", "Unique Downloads")) |>
+  ggplot(aes(x = resource_type, y = count, fill = metric)) +
+  geom_col(position = "dodge") +
+  labs(title = "Unique Views and Downloads by Resource Type",
+       x = "Resource Type",
+       y = "Count",
+       fill = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r top_viewed}
+#| fig-width: 10
+#| fig-height: 8
+
+zenodo_data |>
+  arrange(desc(unique_views)) |>
+  slice_head(n = 15) |>
+  mutate(title = str_trunc(title, 50),
+         title = fct_reorder(title, unique_views)) |>
+  ggplot(aes(x = unique_views, y = title, fill = title)) +
+  geom_col(show.legend = FALSE) +
+  labs(title = "Top 15 Records by Unique Views",
+       x = "Unique Views",
+       y = "")
+```
+
+```{r top_downloaded}
+#| fig-width: 10
+#| fig-height: 8
+
+zenodo_data |>
+  filter(unique_downloads > 0) |>
+  arrange(desc(unique_downloads)) |>
+  slice_head(n = 15) |>
+  mutate(title = str_trunc(title, 50),
+         title = fct_reorder(title, unique_downloads)) |>
+  ggplot(aes(x = unique_downloads, y = title, fill = title)) +
+  geom_col(show.legend = FALSE) +
+  labs(title = "Top 15 Records by Unique Downloads",
+       x = "Unique Downloads",
+       y = "")
+```
+
+**Note:** Views and downloads are aggregated across all versions of each record.
 
 ## Licenses
 
@@ -149,7 +231,7 @@ collaboration_data <- zenodo_data |>
 # Create plot
 collaboration_data |>
   ggplot(aes(x = n_authors, y = n)) +
-  geom_col(fill = colorblind_pal()(8)[2]) +
+  geom_col() +
   labs(title = "Number of Authors per Publication",
        x = "Number of Authors",
        y = "Number of Publications") +
@@ -163,48 +245,28 @@ collaboration_data |>
 # Prepare data
 auth_count <- authors_data |>
   count(author_name, sort = TRUE) |>
-  slice_head(n = 20) |>
+  filter(n>=3) |>
   mutate(author_name = fct_reorder(author_name, n))
-
-# Recycle colorblind palette colors for all authors
-n_auth <- nrow(auth_count)
-colors <- rep(colorblind_pal()(8), length.out = n_auth)
 
 # Create plot
 auth_count |>
   ggplot(aes(x = n, y = author_name, fill = author_name)) +
   geom_col(show.legend = FALSE) +
-  labs(title = "Top 20 Most Prolific Authors",
+  labs(title = "Top Authors (3+ Publications)",
        x = "Number of Publications",
-       y = "Author") +
-  scale_fill_manual(values = colors)
+       y = "Author")
 ```
 
 ## Topics
 
 ```{r subjects}
-#| fig-width: 10
-#| fig-height: 8
+#| echo: false
 
 if (nrow(subjects_data) > 0) {
-  # Prepare data
-  subj_count <- subjects_data |>
+  subjects_data |>
     count(subject, sort = TRUE) |>
-    slice_head(n = 20) |>
-    mutate(subject = fct_reorder(subject, n))
-
-  # Recycle colorblind palette colors for all subjects
-  n_subj <- nrow(subj_count)
-  colors <- rep(colorblind_pal()(8), length.out = n_subj)
-
-  # Create plot
-  subj_count |>
-    ggplot(aes(x = n, y = subject, fill = subject)) +
-    geom_col(show.legend = FALSE) +
-    labs(title = "Top 20 Most Common Subjects",
-         x = "Frequency",
-         y = "Subject") +
-    scale_fill_manual(values = colors)
+    rename(Subject = subject, Count = n) |>
+    knitr::kable(caption = "Topics Distribution")
 } else {
   cat("No subject data available")
 }
@@ -247,8 +309,7 @@ community_dist_plot_data |>
        subtitle = "Number of communities per record",
        x = "Number of Records",
        y = "Community Status") +
-  scale_fill_colorblind() +
-  expand_limits(x = max(community_dist_plot_data$n) * 1.15)
+    expand_limits(x = max(community_dist_plot_data$n) * 1.15)
 ```
 
 ```{r community_stats_calc}
@@ -296,9 +357,8 @@ if (nrow(related_identifiers_data) > 0) {
     geom_col(show.legend = FALSE) +
     labs(title = "Types of Related Identifiers",
          x = "Frequency",
-         y = "Relation Type") +
-    scale_fill_colorblind()
-} else {
+         y = "Relation Type")
+    } else {
   cat("No related identifiers data available")
 }
 ```
@@ -356,8 +416,7 @@ metadata_completeness_data |>
   labs(title = "Author Metadata Completeness",
        x = "Metadata Field",
        y = "Percentage of Authors") +
-  scale_fill_colorblind() +
-  ylim(0, 100)
+    ylim(0, 100)
 ```
 
 ## Affiliation 
@@ -376,19 +435,14 @@ if (nrow(affiliation_data) > 0) {
     slice_head(n = 15) |>
     mutate(author_affiliation = fct_reorder(author_affiliation, n))
 
-  # Recycle colorblind palette colors for all affiliations
-  n_aff <- nrow(aff_count)
-  colors <- rep(colorblind_pal()(8), length.out = n_aff)
-
   # Create plot
   aff_count |>
     ggplot(aes(x = n, y = author_affiliation, fill = author_affiliation)) +
     geom_col(show.legend = FALSE) +
     labs(title = "Top 15 Institutional Affiliations",
          x = "Number of Author Entries",
-         y = "Affiliation") +
-    scale_fill_manual(values = colors)
-} else {
+         y = "Affiliation")
+    } else {
   cat("No affiliation data available")
 }
 ```
@@ -478,17 +532,18 @@ if (nrow(github_data) > 0) {
          x = "Resource Type",
          y = "Number of Publications",
          fill = "Has GitHub Link") +
-    scale_fill_colorblind(labels = c("No", "Yes")) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
 } else {
   cat("No GitHub data available for visualization")
 }
 ```
 
-**Note:**
+**Note:** Relation types follow the [DataCite Metadata Schema](https://datacite-metadata-schema.readthedocs.io/en/4.6/appendices/appendix-1/relationType/):
 
-- "issupplementto": Zenodo record supplements the GitHub repository (e.g., data/manuscripts)
-- "compiles": Zenodo record is compiled from the GitHub repository (e.g., software releases)
+- "issupplementto": The Zenodo record is supplementary material to the GitHub repository
+- "compiles": The Zenodo record was compiled/created from the GitHub repository (e.g., software releases)
+- "iscompiledby": The Zenodo record was used to compile/create the GitHub repository
+- "isdocumentedby": The Zenodo record is documented by the GitHub repository
 
 ## Summary Statistics
 
