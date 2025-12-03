@@ -13,7 +13,7 @@ query_with_retry <- function(query, max_attempts = 3) {
   for (attempt in 1:max_attempts) {
     result <- tryCatch({
       Sys.sleep(1)
-      zenodo$getRecords(q = query, size = 1000)
+      zenodo$getRecords(q = query, size = 25, exact = FALSE)
     }, error = function(e) {
       if (attempt < max_attempts) {
         Sys.sleep(2 ^ attempt)
