@@ -11,7 +11,7 @@ library(lubridate)
 library(jsonlite)
 
 # Define path to raw data
-raw_json_path <- here("plausible", "data", "plausible_raw.json")
+raw_json_path <- here("data", "plausible_raw.json")
 
 # Check if raw data file exists
 if (!file.exists(raw_json_path)) {
@@ -200,7 +200,7 @@ save(
   countries_data,
   pages_data,
   summary_stats,
-  file = here("plausible", "data", "plausible_data.rda")
+  file = here("data", "plausible_data.rda")
 )
 
 cat("\n=== Processing Complete ===\n")
