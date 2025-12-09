@@ -20,8 +20,8 @@ site_id <- "ds4owd-002.github.io/website"
 
 if (api_key != "" && site_id != "") {
   # Step 1: Extract data using bash script
-  extraction_script <- here("plausible", "scripts", "01_extract_plausible_data.sh")
-  output_json <- here("plausible", "data", "plausible_raw.json")
+  extraction_script <- here("scripts", "01_extract_plausible_data.sh")
+  output_json <- here("data", "plausible_raw.json")
 
   extract_result <- system2(
     extraction_script,
@@ -37,18 +37,7 @@ if (api_key != "" && site_id != "") {
   }
 
   # Step 2: Transform the extracted data
-  transform_result <- system2(
-    "Rscript",
-    args = here("plausible", "scripts", "02_transform_plausible_data.R"),
-    stdout = TRUE,
-    stderr = TRUE
-  )
-
-  if (!is.null(attr(transform_result, "status")) && attr(transform_result, "status") != 0) {
-    cat("Error transforming data:\n")
-    cat(paste(transform_result, collapse = "\n"), "\n")
-    stop("Failed to transform Plausible data")
-  }
+  source(here("scripts", "02_transform_plausible_data.R"))
 
   cat("Data extraction and transformation complete!\n")
 } else {
@@ -66,7 +55,7 @@ library(ggthemes)
 library(here)
 
 # Load data
-load(here("plausible", "data", "plausible_data.rda"))
+load(here("data", "plausible_data.rda"))
 
 # Set theme
 theme_set(theme_minimal())
