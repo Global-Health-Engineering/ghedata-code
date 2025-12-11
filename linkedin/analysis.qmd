@@ -283,3 +283,42 @@ content_posts |>
   knitr::kable(format = "html")
 ```
 
+
+### Click Through Rate 
+
+```{r}
+content_overview |> 
+  slice_max(n = 5, order_by = click_through_rate_ctr) |> 
+  select(post_title, click_through_rate_ctr) |> 
+  knitr::kable(format = "html")
+```
+
+```{r}
+hist(content_overview$click_through_rate_ctr, main = "Distribution of CTR", xlab = "Click Through Rate")
+```
+
+```{r}
+content_overview |> 
+  ggplot(aes(x = impressions, y = click_through_rate_ctr)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "\nImpressions", y = "Click Through Rate\n") +
+  theme_few()
+
+paste0("Correlation: ", cor(content_overview$impressions, content_overview$click_through_rate_ctr))
+round(quantile(x = content_overview$click_through_rate_ctr, probs = seq(0,1,.1)), digits = 2)
+```
+
+```{r}
+click_through_no_outliers  <- content_overview |> 
+  filter(click_through_rate_ctr < 0.4)
+
+click_through_no_outliers |> 
+  ggplot(aes(x = impressions, y = click_through_rate_ctr)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "\nImpressions", y = "Click Through Rate\n") +
+  theme_few()
+
+paste0("Correlation: ", cor(click_through_no_outliers$impressions, click_through_no_outliers$click_through_rate_ctr))
+```

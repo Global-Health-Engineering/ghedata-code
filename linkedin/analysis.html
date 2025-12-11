@@ -98,6 +98,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#top-5-likes" id="toc-top-5-likes" class="nav-link" data-scroll-target="#top-5-likes">Top 5: Likes</a></li>
   <li><a href="#top-5-reposts" id="toc-top-5-reposts" class="nav-link" data-scroll-target="#top-5-reposts">Top 5: Reposts</a></li>
   <li><a href="#top-5-engagement-rate" id="toc-top-5-engagement-rate" class="nav-link" data-scroll-target="#top-5-engagement-rate">Top 5: Engagement Rate</a></li>
+  <li><a href="#click-through-rate" id="toc-click-through-rate" class="nav-link" data-scroll-target="#click-through-rate">Click Through Rate</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -644,6 +645,128 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 </div>
+</div>
+</div>
+</section>
+<section id="click-through-rate" class="level3">
+<h3 class="anchored" data-anchor-id="click-through-rate">Click Through Rate</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Display code</summary>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>content_overview <span class="sc">|&gt;</span> </span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(<span class="at">n =</span> <span class="dv">5</span>, <span class="at">order_by =</span> click_through_rate_ctr) <span class="sc">|&gt;</span> </span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(post_title, click_through_rate_ctr) <span class="sc">|&gt;</span> </span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">format =</span> <span class="st">"html"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<table data-quarto-postprocess="true" class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">post_title</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">click_through_rate_ctr</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">It’s a wrap on Day 1! After a series of insightful presentations on GHE statistics 📊 and inspiring talks from our talented PhD researchers 🎓, we ended the day on a creative note. In a 2-hour crafting workshop 🎨 Elizabeth Tilley brought everyone together to carve and print unique cards—an energizing way to close out a fantastic first day!</td>
+<td style="text-align: right;">0.7606952</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">🎨 Final exam... but make it ART! ✍️✨ For an extra 2 points, we challenged students in our MSc class 'International Engineering: from Hubris to Hope' to illustrate their favourite lecture—and they delivered! Who said learning can’t be fun, even in an exam? 🤓 🎭 also great feedback for us to learn what the main takeaways were for students. Swipe through the best illustrations &amp; let us know—should this become a tradition? 👇 🎨 Can you spot Colin Colin Walder?</td>
+<td style="text-align: right;">0.6496459</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Our PhD student, Padraic Casserly, is currently in Mzuzu 🇲🇼 , busy setting up and testing various components of the newly installed biogas reactor. The goal of this installation is to evaluate the performance of biogas reactors under real-world conditions. 🧪 With the assistance of the two biogas operators, Mwai Kandaya and Esau Phiri, they are now conducting their initial pathogen tests. 🔬 Want to learn more about this project? You can find all our biogas-related research under the "Publications" tab on our website! 📚 https://lnkd.in/edNgGv6F</td>
+<td style="text-align: right;">0.2954699</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">🌟 Another productive week at GHE! Our team has been diving deep into ongoing projects here in Zurich 🇨🇭, while part of our crew is hard at work in Blantyre, Malawi. 🇲🇼 Here, we share the most fan-tastic moments of our week—reminding us that sometimes the best ideas come with a refreshing breeze! 😄 What’s your secret to staying cool while working hard? #StayCool</td>
+<td style="text-align: right;">0.2609083</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Field work is officially starting! 🎉 [Update 4/4] Our team is ready to go, and we’re all set up at the Mzedi dumpsite to collect data on the burden of chronic respiratory symptoms and air pollution exposures among waste pickers, as a part of PhD thesis of Saloni Vijay. Credits to Hope kelvin Chilunga for setting up the tent 🏕️! Elizabeth Tilley, Jamillah Meghji, Dr. Peter Banda, Lindsay Zurba Saloni Vijay, Colin Walder, Chana Khuluza, MBBS., JUNIAH MAZEZE, Dunia wasili, Anstead Kankwatira, Rose Malamba, Elizabeth Jalisi, Ramsey Mauka, Innocent Matchipisa, Hope kelvin Chilunga</td>
+<td style="text-align: right;">0.2489083</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Display code</summary>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(content_overview<span class="sc">$</span>click_through_rate_ctr, <span class="at">main =</span> <span class="st">"Distribution of CTR"</span>, <span class="at">xlab =</span> <span class="st">"Click Through Rate"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Display code</summary>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>content_overview <span class="sc">|&gt;</span> </span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> impressions, <span class="at">y =</span> click_through_rate_ctr)) <span class="sc">+</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>) <span class="sc">+</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">Impressions"</span>, <span class="at">y =</span> <span class="st">"Click Through Rate</span><span class="sc">\n</span><span class="st">"</span>) <span class="sc">+</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_few</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Display code</summary>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">"Correlation: "</span>, <span class="fu">cor</span>(content_overview<span class="sc">$</span>impressions, content_overview<span class="sc">$</span>click_through_rate_ctr))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Correlation: 0.151369970509074"</code></pre>
+</div>
+<details class="code-fold">
+<summary>Display code</summary>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">quantile</span>(<span class="at">x =</span> content_overview<span class="sc">$</span>click_through_rate_ctr, <span class="at">probs =</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,.<span class="dv">1</span>)), <span class="at">digits =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>  0%  10%  20%  30%  40%  50%  60%  70%  80%  90% 100% 
+0.00 0.02 0.03 0.03 0.04 0.04 0.05 0.05 0.07 0.10 0.76 </code></pre>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Display code</summary>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>click_through_no_outliers  <span class="ot">&lt;-</span> content_overview <span class="sc">|&gt;</span> </span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(click_through_rate_ctr <span class="sc">&lt;</span> <span class="fl">0.4</span>)</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>click_through_no_outliers <span class="sc">|&gt;</span> </span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> impressions, <span class="at">y =</span> click_through_rate_ctr)) <span class="sc">+</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>) <span class="sc">+</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">Impressions"</span>, <span class="at">y =</span> <span class="st">"Click Through Rate</span><span class="sc">\n</span><span class="st">"</span>) <span class="sc">+</span></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_few</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<details class="code-fold">
+<summary>Display code</summary>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">"Correlation: "</span>, <span class="fu">cor</span>(click_through_no_outliers<span class="sc">$</span>impressions, click_through_no_outliers<span class="sc">$</span>click_through_rate_ctr))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Correlation: 0.10378425824936"</code></pre>
 </div>
 </div>
 </section>
