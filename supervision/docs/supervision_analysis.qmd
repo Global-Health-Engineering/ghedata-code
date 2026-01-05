@@ -1,0 +1,450 @@
+---
+title: "GHE Supervision Analysis"
+author: "Global Health Engineering"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    toc-location: left
+execute:
+  echo: true
+  warning: false
+  message: false
+code-fold: true
+---
+
+```{r extract_data}
+#| include: false
+#| eval: false
+# Set to eval: true to extract and transform data before rendering
+# This chunk extracts data from Google Sheets and saves it as CSV
+
+library(here)
+source(here("scripts", "01_extract_transform_supervision_data.R"))
+```
+
+```{r setup}
+library(tidyverse)
+library(lubridate)
+library(scales)
+library(knitr)
+library(here)
+
+# Load data
+people <- read_csv(here("data", "people.csv"), show_col_types = FALSE)
+
+# Derive year from end_date if year column is all NA
+if (all(is.na(people$year))) {
+  people <- people |>
+    mutate(year = year(end_date))
+}
+
+# Set theme for all plots
+theme_set(theme_minimal())
+```
+
+## Overview
+
+This analysis covers the supervision records from the GHE research group. Names and identifiers have been removed for privacy reasons.
+
+```{r overview_stats}
+#| echo: false
+#| include: false
+
+n_total <- nrow(people)
+n_degrees <- n_distinct(people$degree)
+n_archived <- sum(people$status == "archived", na.rm = TRUE)
+n_in_progress <- sum(people$status == "in-progress", na.rm = TRUE)
+year_range <- if (any(!is.na(people$year))) range(people$year, na.rm = TRUE) else c(NA, NA)
+```
+
+**Key Statistics:**
+
+- Total supervision records: `r n_total`
+- Unique degree types: `r n_degrees`
+- Year range: `r if (!is.na(year_range[1])) paste(year_range[1], "to", year_range[2]) else "N/A"`
+- Archived: `r n_archived`
+- In progress: `r n_in_progress`
+
+## Supervision by Degree Type
+
+```{r degree_distribution}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+degree_data <- people |>
+  filter(!is.na(degree)) |>
+  count(degree, sort = TRUE) |>
+  mutate(
+    degree = fct_reorder(degree, n),
+    pct = round(n / sum(n) * 100, 1)
+  )
+
+# Create plot
+degree_data |>
+  ggplot(aes(x = n, y = degree, fill = degree)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(n, " (", pct, "%)")),
+            hjust = -0.1, size = 4) +
+  labs(title = "Distribution by Degree Type",
+       x = "Number of Records",
+       y = "Degree") +
+  expand_limits(x = max(degree_data$n) * 1.2)
+```
+
+```{r degree_table}
+#| echo: false
+
+degree_data |>
+  arrange(desc(n)) |>
+  rename(Degree = degree, Count = n, `Percentage (%)` = pct) |>
+  knitr::kable(caption = "Supervision by Degree Type")
+```
+
+## Supervision Status
+
+```{r status_distribution}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+status_data <- people |>
+  filter(!is.na(status)) |>
+  count(status, sort = TRUE) |>
+  mutate(
+    status = fct_reorder(status, n),
+    pct = round(n / sum(n) * 100, 1)
+  )
+
+# Create plot
+status_data |>
+  ggplot(aes(x = n, y = status, fill = status)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(n, " (", pct, "%)")),
+            hjust = -0.1, size = 4) +
+  labs(title = "Distribution by Status",
+       x = "Number of Records",
+       y = "Status") +
+  expand_limits(x = max(status_data$n) * 1.2)
+```
+
+## Yearly Trends
+
+```{r yearly_trends}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data - BSc and MSc only
+yearly_data <- people |>
+  filter(!is.na(year), degree %in% c("bsc", "msc")) |>
+  count(year, degree)
+
+if (nrow(yearly_data) > 0) {
+  # Create plot with two lines
+  yearly_data |>
+    ggplot(aes(x = year, y = n, color = degree)) +
+    geom_line(linewidth = 1) +
+    geom_point(size = 3) +
+    geom_text(aes(label = n), vjust = -1, size = 4, show.legend = FALSE) +
+    labs(title = "BSc and MSc Supervision Records by End Year",
+         x = "Year",
+         y = "Number of Records",
+         color = "Degree") +
+    scale_x_continuous(breaks = seq(min(yearly_data$year), max(yearly_data$year), 1)) +
+    scale_color_manual(values = c("bsc" = "#E69F00", "msc" = "#56B4E9"),
+                       labels = c("bsc" = "BSc", "msc" = "MSc")) +
+    expand_limits(y = max(yearly_data$n) * 1.15) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+} else {
+  cat("No year data available")
+}
+```
+
+```{r yearly_by_degree}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+yearly_degree_data <- people |>
+  filter(!is.na(year), !is.na(degree)) |>
+  count(year, degree)
+
+if (nrow(yearly_degree_data) > 0) {
+  # Create plot
+  yearly_degree_data |>
+    ggplot(aes(x = year, y = n, fill = degree)) +
+    geom_col(position = "stack") +
+    labs(title = "Supervision by Year and Degree Type",
+         x = "Year",
+         y = "Number of Records",
+         fill = "Degree") +
+    scale_x_continuous(breaks = seq(min(yearly_degree_data$year), max(yearly_degree_data$year), 1)) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+} else {
+  cat("No year/degree data available")
+}
+```
+
+## Supervision Type
+
+```{r type_distribution}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+type_data <- people |>
+  filter(!is.na(type)) |>
+  count(type, sort = TRUE) |>
+  mutate(
+    type = fct_reorder(type, n),
+    pct = round(n / sum(n) * 100, 1)
+  )
+
+# Create plot
+type_data |>
+  ggplot(aes(x = n, y = type, fill = type)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = paste0(n, " (", pct, "%)")),
+            hjust = -0.1, size = 4) +
+  labs(title = "Distribution by Supervision Type",
+       x = "Number of Records",
+       y = "Type") +
+  expand_limits(x = max(type_data$n) * 1.2)
+```
+
+## ETH Department Distribution
+
+```{r department_distribution}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+dept_data <- people |>
+  filter(!is.na(eth_department)) |>
+  count(eth_department, sort = TRUE) |>
+  mutate(
+    eth_department = fct_reorder(eth_department, n),
+    pct = round(n / sum(n) * 100, 1)
+  )
+
+if (nrow(dept_data) > 0) {
+  # Create plot
+  dept_data |>
+    ggplot(aes(x = n, y = eth_department, fill = eth_department)) +
+    geom_col(show.legend = FALSE) +
+    geom_text(aes(label = paste0(n, " (", pct, "%)")),
+              hjust = -0.1, size = 4) +
+    labs(title = "Distribution by ETH Department",
+         x = "Number of Records",
+         y = "Department") +
+    expand_limits(x = max(dept_data$n) * 1.2)
+} else {
+  cat("No ETH department data available")
+}
+```
+
+## Partner Organizations
+
+```{r partner_distribution}
+#| fig-width: 10
+#| fig-height: 8
+
+# Prepare data
+partner_data <- people |>
+  filter(!is.na(partner_organisation)) |>
+  count(partner_organisation, sort = TRUE) |>
+  mutate(
+    partner_organisation = fct_reorder(partner_organisation, n),
+    pct = round(n / sum(n) * 100, 1)
+  )
+
+if (nrow(partner_data) > 0) {
+  # Create plot
+  partner_data |>
+    ggplot(aes(x = n, y = partner_organisation, fill = partner_organisation)) +
+    geom_col(show.legend = FALSE) +
+    geom_text(aes(label = paste0(n, " (", pct, "%)")),
+              hjust = -0.1, size = 4) +
+    labs(title = "Distribution by Partner Organization",
+         x = "Number of Records",
+         y = "Partner Organization") +
+    expand_limits(x = max(partner_data$n) * 1.2)
+} else {
+  cat("No partner organization data available")
+}
+```
+
+## Supervision Duration
+
+Note: Duration analysis requires both start and end dates. Since start dates are not available in the current dataset, this section shows data availability instead.
+
+```{r duration_analysis}
+#| fig-width: 10
+#| fig-height: 6
+
+# Check data availability for duration analysis
+has_start_date <- sum(!is.na(people$start_date))
+has_end_date <- sum(!is.na(people$end_date))
+
+cat(paste0("Records with start date: ", has_start_date, "/", nrow(people), "\n"))
+cat(paste0("Records with end date: ", has_end_date, "/", nrow(people), "\n"))
+
+if (has_start_date > 0 && has_end_date > 0) {
+  # Calculate duration for archived supervisions
+  duration_data <- people |>
+    filter(!is.na(start_date), !is.na(end_date), status == "archived") |>
+    mutate(
+      duration_months = interval(start_date, end_date) / months(1)
+    )
+
+  if (nrow(duration_data) > 0) {
+    # Create histogram
+    duration_data |>
+      ggplot(aes(x = duration_months)) +
+      geom_histogram(binwidth = 2, fill = "steelblue", color = "white") +
+      labs(title = "Distribution of Supervision Duration (Archived)",
+           x = "Duration (months)",
+           y = "Count") +
+      theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+  }
+} else {
+  cat("Insufficient data for duration analysis (missing start dates)")
+}
+```
+
+```{r duration_by_degree}
+#| fig-width: 10
+#| fig-height: 6
+#| eval: false
+
+# This chunk is disabled since start_date data is not available
+if (exists("duration_data") && nrow(duration_data) > 0) {
+  # Prepare data
+  duration_by_degree <- duration_data |>
+    filter(!is.na(degree)) |>
+    group_by(degree) |>
+    summarise(
+      n = n(),
+      mean_duration = mean(duration_months, na.rm = TRUE),
+      median_duration = median(duration_months, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    mutate(degree = fct_reorder(degree, mean_duration))
+
+  # Create plot
+  duration_by_degree |>
+    ggplot(aes(x = mean_duration, y = degree, fill = degree)) +
+    geom_col(show.legend = FALSE) +
+    geom_text(aes(label = paste0(round(mean_duration, 1), " mo")),
+              hjust = -0.1, size = 4) +
+    labs(title = "Average Supervision Duration by Degree Type",
+         x = "Mean Duration (months)",
+         y = "Degree") +
+    expand_limits(x = max(duration_by_degree$mean_duration) * 1.2)
+}
+```
+
+## Data Publication Metrics
+
+```{r data_publication}
+#| fig-width: 10
+#| fig-height: 6
+
+# Calculate publication rates for archived supervisions
+pub_data <- people |>
+  filter(status == "archived") |>
+  mutate(
+    has_eth_collection = !is.na(eth_collection_link) & eth_collection_link != "NA"
+  )
+
+if (nrow(pub_data) > 0) {
+  # Prepare summary data
+  pub_summary <- tibble(
+    metric = c("ETH Research Collection"),
+    count = c(sum(pub_data$has_eth_collection)),
+    total = nrow(pub_data)
+  ) |>
+    mutate(pct = round(count / total * 100, 1))
+
+  # Create plot
+  pub_summary |>
+    ggplot(aes(x = metric, y = pct, fill = metric)) +
+    geom_col(show.legend = FALSE) +
+    geom_text(aes(label = paste0(count, "/", total, "\n(", pct, "%)")),
+              vjust = -0.2, size = 4) +
+    labs(title = "ETH Research Collection Links (Archived Supervisions)",
+         x = "",
+         y = "Percentage (%)") +
+    ylim(0, 100) +
+    expand_limits(y = max(pub_summary$pct) * 1.3)
+} else {
+  cat("No archived supervision data available")
+}
+```
+
+## Status by Degree Type
+
+```{r status_by_degree}
+#| fig-width: 10
+#| fig-height: 6
+
+# Prepare data
+status_degree_data <- people |>
+  filter(!is.na(status), !is.na(degree)) |>
+  count(degree, status)
+
+# Create plot
+status_degree_data |>
+  ggplot(aes(x = degree, y = n, fill = status)) +
+  geom_col(position = "dodge") +
+  labs(title = "Status Distribution by Degree Type",
+       x = "Degree",
+       y = "Count",
+       fill = "Status") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Summary Statistics
+
+```{r summary_table}
+#| echo: false
+
+# Create summary by degree
+people |>
+  filter(!is.na(degree)) |>
+  group_by(degree) |>
+  summarise(
+    Total = n(),
+    Archived = sum(status == "archived", na.rm = TRUE),
+    `In Progress` = sum(status == "in-progress", na.rm = TRUE),
+    `With Partner` = sum(!is.na(partner_organisation)),
+    `Has ETH Collection` = sum(!is.na(eth_collection_link) & eth_collection_link != "NA"),
+    .groups = "drop"
+  ) |>
+  arrange(desc(Total)) |>
+  knitr::kable(caption = "Summary Statistics by Degree Type")
+```
+
+```{r year_summary}
+#| echo: false
+
+# Create summary by year (end year)
+year_summary_data <- people |>
+  filter(!is.na(year))
+
+if (nrow(year_summary_data) > 0) {
+  year_summary_data |>
+    group_by(year) |>
+    summarise(
+      Total = n(),
+      Archived = sum(status == "archived", na.rm = TRUE),
+      `In Progress` = sum(status == "in-progress", na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    arrange(desc(year)) |>
+    knitr::kable(caption = "Summary Statistics by End Year")
+} else {
+  cat("No year data available for summary")
+}
+```
