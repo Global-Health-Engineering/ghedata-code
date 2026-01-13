@@ -10,6 +10,8 @@ format:
 execute:
   message: false
   warning: false
+editor_options: 
+  chunk_output_type: console
 ---
 
 This analysis explores the computational competencies and tool usage patterns of the Global Health Engineering team at ETH Zürich. The data comes from a team survey conducted in June 2025 to assess programming skills, version control knowledge, IDE usage, and adoption of modern tools like Large Language Models.
@@ -63,7 +65,84 @@ library(knitr)
 theme_set(theme_few())
 
 # Load data
-comp <- read_csv("clean-data/computational.csv")
+comp <- read_csv(here::here("competencies/clean-data/computational.csv"))
+```
+
+```{r}
+#| label: data-processing
+#| include: false
+
+# Define helper function for converting experience to numeric scores
+exp_score <- function(x) {
+  case_when(
+    str_detect(as.character(x), "never|none") ~ 0,
+    str_detect(as.character(x), "few lines") ~ 1,
+    str_detect(as.character(x), "couple of pages") ~ 2,
+    str_detect(as.character(x), "larger pieces") ~ 3,
+    TRUE ~ NA_real_
+  )
+}
+
+# Define experience level ordering for programming questions
+exp_levels <- c(
+  "I have never programmed.",
+  "I have written a few lines now and again.",
+  "I have written programs for my own use that are a couple of pages long.",
+  "I have written and maintained larger pieces of software."
+)
+
+# Define Git experience levels
+git_levels <- c(
+  "I have never used Git.",
+  "I have used Git occasionally for basic tasks (e.g., cloning a repository, making commits).",
+  "I have used Git regularly for my own projects, including branching and resolving conflicts.",
+  "I have used Git extensively for collaborative development, including advanced workflows (e.g., pull requests, rebasing, resolving complex merge conflicts)."
+)
+
+# Define GitHub experience levels
+github_levels <- c(
+  "I have never used GitHub.",
+  "I have used GitHub occasionally to view or download code repositories.",
+  "I have used GitHub regularly to manage my own repositories (e.g., pushing code, managing issues, using README files).",
+  "I have used GitHub extensively for collaborative development, including advanced features (e.g., pull requests, code reviews, managing projects, GitHub Actions)."
+)
+
+# Define CLI usage levels
+cli_levels <- c(
+  "I have never used the command-line interface (Terminal on Mac, Windows Terminal on Windows).",
+  "I have used the CLI occasionally for basic tasks (e.g., navigating folders, running simple commands).",
+  "I use the CLI regularly for my own projects, including scripting and automating tasks.",
+  "I use the CLI extensively for advanced workflows, system administration, or integrating with other tools (e.g., SSH, environment management, custom scripts)."
+)
+
+# Define programming confidence levels
+confidence_levels <- c(
+  "I wouldn't know where to start.",
+  "I could struggle through by trial and error with a lot of web searches.",
+  "I could do it quickly with external help.",
+  "I could do it quickly with no use of external help."
+)
+
+# Define LLM frequency levels
+llm_freq_levels <- c(
+  "I do not use LLMs.",
+  "I use LLMs occasionally for specific tasks when needed (e.g once a week).",
+  "I regularly use LLMs for various tasks to improve efficiency (e.g. once a day).",
+  "I rely on LLMs for completing a wide range of tasks (e.g. several times a day)."
+)
+
+# Apply factors to all relevant columns
+comp_processed <- comp |>
+  mutate(
+    experience_programming_general = factor(experience_programming_general, levels = exp_levels),
+    experience_programming_r = factor(experience_programming_r, levels = exp_levels),
+    experience_programming_python = factor(experience_programming_python, levels = exp_levels),
+    experience_git = factor(experience_git, levels = git_levels),
+    experience_github = factor(experience_github, levels = github_levels),
+    cli_usage = factor(cli_usage, levels = cli_levels),
+    programming_confidence = factor(programming_confidence, levels = confidence_levels),
+    llm_usage = factor(llm_usage, levels = llm_freq_levels)
+  )
 ```
 
 ## Data Overview
@@ -72,164 +151,58 @@ The survey was completed in June 2025 with a total of `r nrow(comp)` respondents
 
 ## Programming Experience
 
-### General Programming Experience
-
 ```{r}
-#| label: fig-programming-general
-#| fig-cap: "General programming experience levels"
-#| fig-height: 5
-
-# Define experience level ordering
-exp_levels <- c(
-  "I have never programmed.",
-  "I have written a few lines now and again.",
-  "I have written programs for my own use that are a couple of pages long.",
-  "I have written and maintained larger pieces of software."
-)
-
-comp |>
-  # TODO: Use fill of tidyr to make categories asnwered as 0 with 0
-  mutate(experience_programming_general = factor(experience_programming_general, levels = exp_levels)) |>
-  count(experience_programming_general) |>
-  drop_na() |>
-  ggplot(aes(x = experience_programming_general, y = n)) + # TODO: use coord_flip, so that labels are horizonal on y-axis
-  geom_col(fill = "#2E86AB", alpha = 0.8) +
-  geom_text(aes(label = n), vjust = -0.5, size = 4) +
-  labs(
-    x = "",
-    y = "\nNumber of respondents",
-    title = "General Programming Experience"
-  ) +
-  theme_few() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 9)) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-```
-
-### R Programming Experience
-
-```{r}
-#| label: fig-programming-r
-#| fig-cap: "R programming experience levels"
-#| fig-height: 5
-
-# TODO: see todos for first graph
-
-comp |>
-  mutate(experience_programming_r = factor(experience_programming_r, levels = exp_levels)) |>
-  count(experience_programming_r) |>
-  drop_na() |>
-  ggplot(aes(x = experience_programming_r, y = n)) +
-  geom_col(fill = "#A23B72", alpha = 0.8) +
-  geom_text(aes(label = n), vjust = -0.5, size = 4) +
-  labs(
-    x = "",
-    y = "\nNumber of respondents",
-    title = "R Programming Experience"
-  ) +
-  theme_few() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 9)) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-```
-
-### Python Programming Experience
-
-```{r}
-#| label: fig-programming-python
-#| fig-cap: "Python programming experience levels"
-#| fig-height: 5
-
-comp |>
-  mutate(experience_programming_python = factor(experience_programming_python, levels = exp_levels)) |>
-  count(experience_programming_python) |>
-  drop_na() |>
-  ggplot(aes(x = experience_programming_python, y = n)) +
-  geom_col(fill = "#F18F01", alpha = 0.8) +
-  geom_text(aes(label = n), vjust = -0.5, size = 4) +
-  labs(
-    x = "",
-    y = "\nNumber of respondents",
-    title = "Python Programming Experience"
-  ) +
-  theme_few() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 9)) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-```
-
-### R vs Python Experience Comparison
-
-```{r}
-#| label: fig-r-vs-python
-#| fig-cap: "R vs Python experience comparison"
-#| fig-height: 6
+#| label: fig-programming-combined
+#| fig-cap: "Programming experience levels across General, R, and Python"
+#| fig-height: 7
 #| fig-width: 10
 
-# Create numeric scores for experience levels
-exp_score <- function(x) {
-  case_when(
-    str_detect(x, "never|none") ~ 0,
-    str_detect(x, "few lines") ~ 1,
-    str_detect(x, "couple of pages") ~ 2,
-    str_detect(x, "larger pieces") ~ 3,
-    TRUE ~ NA_real_
-  )
-}
-
-comp |>
-  mutate(
-    r_score = exp_score(experience_programming_r),
-    python_score = exp_score(experience_programming_python)
+# Create long format data for combined visualization
+comp_processed |>
+  select(id, experience_programming_general, experience_programming_r, experience_programming_python) |>
+  pivot_longer(
+    cols = starts_with("experience_programming"),
+    names_to = "category",
+    values_to = "level"
   ) |>
-  filter(!is.na(r_score) & !is.na(python_score)) |>
-  count(r_score, python_score) |>
-  ggplot(aes(x = r_score, y = python_score, size = n, color = n)) +
-  geom_point(alpha = 0.7) +
-  scale_size_continuous(range = c(3, 15)) +
-  scale_color_gradient(low = "#A23B72", high = "#F18F01") +
-  scale_x_continuous(
-    breaks = 0:3,
-    labels = c("None", "Few lines", "Pages", "Larger")
-  ) +
-  scale_y_continuous(
-    breaks = 0:3,
-    labels = c("None", "Few lines", "Pages", "Larger")
-  ) +
+  mutate(
+    category = case_when(
+      category == "experience_programming_general" ~ "General Programming",
+      category == "experience_programming_r" ~ "R",
+      category == "experience_programming_python" ~ "Python"
+    ),
+    category = factor(category, levels = c("General Programming", "R", "Python"))
+  ) |>
+  # Use complete to fill in missing combinations with 0
+  count(category, level) |>
+  complete(category, level, fill = list(n = 0)) |>
+  # Create shortened labels for better display
+  mutate(
+    level_short = case_when(
+      level == "I have never programmed." ~ "Never",
+      level == "I have written a few lines now and again." ~ "Few lines",
+      level == "I have written programs for my own use that are a couple of pages long." ~ "Couple pages",
+      level == "I have written and maintained larger pieces of software." ~ "Larger software"
+    ),
+    level_short = factor(level_short, levels = c("Never", "Few lines", "Couple pages", "Larger software"))
+  ) |>
+  drop_na(level_short) |>
+  ggplot(aes(x = level_short, y = n, fill = category)) +
+  geom_col(position = "dodge", alpha = 0.8) +
+  geom_text(aes(label = n), position = position_dodge(width = 0.9), hjust = -0.2, size = 3.5) +
+  coord_flip() +
   labs(
-    x = "\nR Experience Level",
-    y = "Python Experience Level\n",
-    title = "R vs Python Experience Patterns",
-    size = "Count",
-    color = "Count"
+    x = "",
+    y = "\nNumber of respondents",
+    fill = "Category",
+    title = "Programming Experience Across Categories"
   ) +
   theme_few() +
-  theme(legend.position = "right")
+  scale_fill_colorblind() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 ```
 
-```{r}
-#| label: tbl-r-python-crosstab
-#| tbl-cap: "R vs Python experience cross-tabulation"
 
-comp |>
-  mutate(
-    r_exp = case_when(
-      str_detect(experience_programming_r, "never|none") ~ "None",
-      str_detect(experience_programming_r, "few lines") ~ "Beginner",
-      str_detect(experience_programming_r, "couple of pages") ~ "Intermediate",
-      str_detect(experience_programming_r, "larger pieces") ~ "Advanced",
-      TRUE ~ NA_character_
-    ),
-    python_exp = case_when(
-      str_detect(experience_programming_python, "never|none") ~ "None",
-      str_detect(experience_programming_python, "few lines") ~ "Beginner",
-      str_detect(experience_programming_python, "couple of pages") ~ "Intermediate",
-      str_detect(experience_programming_python, "larger pieces") ~ "Advanced",
-      TRUE ~ NA_character_
-    )
-  ) |>
-  filter(!is.na(r_exp) & !is.na(python_exp)) |>
-  count(r_exp, python_exp) |>
-  pivot_wider(names_from = python_exp, values_from = n, values_fill = 0) |>
-  kable()
-```
 
 ### Other Programming Languages
 
@@ -239,38 +212,12 @@ comp |>
 
 # Parse multi-value field
 comp |>
-  filter(!is.na(other_languages)) |>
-  filter(other_languages != "None of the above") |>
+  select(other_languages) |> 
   mutate(langs = str_split(other_languages, ",\\s*")) |>
-  unnest(langs) |>
+  unnest(langs) |> 
   count(langs, sort = TRUE) |>
   rename(Language = langs, Count = n) |>
   kable()
-```
-
-```{r}
-#| label: fig-other-languages
-#| fig-cap: "Most common other programming languages"
-#| fig-height: 6
-
-comp |>
-  filter(!is.na(other_languages)) |>
-  filter(other_languages != "None of the above") |>
-  mutate(langs = str_split(other_languages, ",\\s*")) |>
-  unnest(langs) |>
-  count(langs, sort = TRUE) |>
-  slice_max(n, n = 10) |>
-  ggplot(aes(x = reorder(langs, n), y = n)) +
-  geom_col(fill = "#2E86AB", alpha = 0.8) +
-  geom_text(aes(label = n), hjust = -0.3, size = 3.5) +
-  coord_flip() +
-  labs(
-    x = "",
-    y = "\nNumber of respondents",
-    title = "Top 10 Other Programming Languages"
-  ) +
-  theme_few() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 ```
 
 ## Version Control Skills
@@ -282,28 +229,29 @@ comp |>
 #| fig-cap: "Git experience distribution"
 #| fig-height: 5
 
-git_levels <- c(
-  "I have never used Git.",
-  "I have used Git occasionally for basic tasks (e.g., cloning a repository, making commits).",
-  "I have used Git regularly for my own projects, including branching and resolving conflicts.",
-  "I have used Git extensively for collaborative development, including advanced workflows (e.g., pull requests, rebasing, resolving complex merge conflicts)."
-)
-
-comp |>
-  mutate(experience_git = factor(experience_git, levels = git_levels)) |>
+comp_processed |>
   count(experience_git) |>
-  drop_na() |>
-  mutate(experience_git = str_wrap(experience_git, 40)) |>
-  ggplot(aes(x = experience_git, y = n)) +
+  complete(experience_git, fill = list(n = 0)) |>
+  mutate(
+    git_short = case_when(
+      experience_git == "I have never used Git." ~ "Never",
+      str_detect(experience_git, "occasionally") ~ "Occasionally",
+      str_detect(experience_git, "regularly") ~ "Regularly",
+      str_detect(experience_git, "extensively") ~ "Extensively"
+    ),
+    git_short = factor(git_short, levels = c("Never", "Occasionally", "Regularly", "Extensively"))
+  ) |>
+  drop_na(git_short) |>
+  ggplot(aes(x = git_short, y = n)) +
   geom_col(fill = "#2E86AB", alpha = 0.8) +
-  geom_text(aes(label = n), vjust = -0.5, size = 4) +
+  geom_text(aes(label = n), hjust = -0.2, size = 4) +
+  coord_flip() +
   labs(
     x = "",
     y = "\nNumber of respondents",
     title = "Git Experience Levels"
   ) +
   theme_few() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 ```
 
@@ -314,28 +262,29 @@ comp |>
 #| fig-cap: "GitHub experience distribution"
 #| fig-height: 5
 
-github_levels <- c(
-  "I have never used GitHub.",
-  "I have used GitHub occasionally to view or download code repositories.",
-  "I have used GitHub regularly to manage my own repositories (e.g., pushing code, managing issues, using README files).",
-  "I have used GitHub extensively for collaborative development, including advanced features (e.g., pull requests, code reviews, managing projects, GitHub Actions)."
-)
-
-comp |>
-  mutate(experience_github = factor(experience_github, levels = github_levels)) |>
+comp_processed |>
   count(experience_github) |>
-  drop_na() |>
-  mutate(experience_github = str_wrap(experience_github, 40)) |>
-  ggplot(aes(x = experience_github, y = n)) +
+  complete(experience_github, fill = list(n = 0)) |>
+  mutate(
+    github_short = case_when(
+      experience_github == "I have never used GitHub." ~ "Never",
+      str_detect(experience_github, "occasionally") ~ "Occasionally",
+      str_detect(experience_github, "regularly") ~ "Regularly",
+      str_detect(experience_github, "extensively") ~ "Extensively"
+    ),
+    github_short = factor(github_short, levels = c("Never", "Occasionally", "Regularly", "Extensively"))
+  ) |>
+  drop_na(github_short) |>
+  ggplot(aes(x = github_short, y = n)) +
   geom_col(fill = "#A23B72", alpha = 0.8) +
-  geom_text(aes(label = n), vjust = -0.5, size = 4) +
+  geom_text(aes(label = n), hjust = -0.2, size = 4) +
+  coord_flip() +
   labs(
     x = "",
     y = "\nNumber of respondents",
     title = "GitHub Experience Levels"
   ) +
   theme_few() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 ```
 
@@ -357,30 +306,6 @@ comp |>
   kable()
 ```
 
-```{r}
-#| label: fig-ide-usage
-#| fig-cap: "Most popular IDEs among team"
-#| fig-height: 6
-
-comp |>
-  filter(!is.na(ides_used)) |>
-  filter(ides_used != "None of the above") |>
-  mutate(ide_list = str_split(ides_used, ",\\s*")) |>
-  unnest(ide_list) |>
-  count(ide_list, sort = TRUE) |>
-  ggplot(aes(x = reorder(ide_list, n), y = n)) +
-  geom_col(fill = "#2E86AB", alpha = 0.8) +
-  geom_text(aes(label = n), hjust = -0.3, size = 3.5) +
-  coord_flip() +
-  labs(
-    x = "",
-    y = "\nNumber of users",
-    title = "IDE Popularity"
-  ) +
-  theme_few() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-```
-
 ### Command-Line Interface (CLI) Usage
 
 ```{r}
@@ -388,28 +313,29 @@ comp |>
 #| fig-cap: "CLI usage patterns"
 #| fig-height: 5
 
-cli_levels <- c(
-  "I have never used the command-line interface (Terminal on Mac, Windows Terminal on Windows).",
-  "I have used the CLI occasionally for basic tasks (e.g., navigating folders, running simple commands).",
-  "I use the CLI regularly for my own projects, including scripting and automating tasks.",
-  "I use the CLI extensively for advanced workflows, system administration, or integrating with other tools (e.g., SSH, environment management, custom scripts)."
-)
-
-comp |>
-  mutate(cli_usage = factor(cli_usage, levels = cli_levels)) |>
+comp_processed |>
   count(cli_usage) |>
-  drop_na() |>
-  mutate(cli_usage = str_wrap(cli_usage, 35)) |>
-  ggplot(aes(x = cli_usage, y = n)) +
+  complete(cli_usage, fill = list(n = 0)) |>
+  mutate(
+    cli_short = case_when(
+      str_detect(cli_usage, "never") ~ "Never",
+      str_detect(cli_usage, "occasionally") ~ "Occasionally",
+      str_detect(cli_usage, "regularly") ~ "Regularly",
+      str_detect(cli_usage, "extensively") ~ "Extensively"
+    ),
+    cli_short = factor(cli_short, levels = c("Never", "Occasionally", "Regularly", "Extensively"))
+  ) |>
+  drop_na(cli_short) |>
+  ggplot(aes(x = cli_short, y = n)) +
   geom_col(fill = "#F18F01", alpha = 0.8) +
-  geom_text(aes(label = n), vjust = -0.5, size = 4) +
+  geom_text(aes(label = n), hjust = -0.2, size = 4) +
+  coord_flip() +
   labs(
     x = "",
     y = "\nNumber of respondents",
     title = "Command-Line Interface Usage"
   ) +
   theme_few() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 ```
 
@@ -422,28 +348,29 @@ comp |>
 #| fig-cap: "Frequency of LLM usage"
 #| fig-height: 5
 
-llm_freq_levels <- c(
-  "I do not use LLMs.",
-  "I use LLMs occasionally for specific tasks when needed (e.g once a week).",
-  "I regularly use LLMs for various tasks to improve efficiency (e.g. once a day).",
-  "I rely on LLMs for completing a wide range of tasks (e.g. several times a day)."
-)
-
-comp |>
-  mutate(llm_usage = factor(llm_usage, levels = llm_freq_levels)) |>
+comp_processed |>
   count(llm_usage) |>
-  drop_na() |>
-  mutate(llm_usage = str_wrap(llm_usage, 35)) |>
-  ggplot(aes(x = llm_usage, y = n)) +
+  complete(llm_usage, fill = list(n = 0)) |>
+  mutate(
+    llm_short = case_when(
+      str_detect(llm_usage, "do not") ~ "Do not use",
+      str_detect(llm_usage, "occasionally") ~ "Occasionally",
+      str_detect(llm_usage, "regularly") ~ "Regularly",
+      str_detect(llm_usage, "rely") ~ "Rely heavily"
+    ),
+    llm_short = factor(llm_short, levels = c("Do not use", "Occasionally", "Regularly", "Rely heavily"))
+  ) |>
+  drop_na(llm_short) |>
+  ggplot(aes(x = llm_short, y = n)) +
   geom_col(fill = "#2E86AB", alpha = 0.8) +
-  geom_text(aes(label = n), vjust = -0.5, size = 4) +
+  geom_text(aes(label = n), hjust = -0.2, size = 4) +
+  coord_flip() +
   labs(
     x = "",
     y = "\nNumber of respondents",
     title = "LLM Usage Frequency"
   ) +
   theme_few() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 ```
 
@@ -453,202 +380,30 @@ comp |>
 #| label: tbl-llm-tools
 #| tbl-cap: "LLM tools and platforms used by team"
 
+# Calculate total respondents for percentage calculation
+total_respondents <- nrow(comp)
+
 comp |>
+  select(llm_tools_used) |>
   filter(!is.na(llm_tools_used)) |>
-  mutate(tool_list = str_split(llm_tools_used, ",\\s*")) |>
+  # Split on comma followed by space, but not when inside parentheses
+  mutate(tool_list = str_split(llm_tools_used, ",\\s*(?![^()]*\\))")) |>
   unnest(tool_list) |>
+  mutate(tool_list = str_trim(tool_list)) |>  # Clean up any extra whitespace
   count(tool_list, sort = TRUE) |>
-  rename(Tool = tool_list, Count = n) |>
-  kable()
-```
-
-```{r}
-#| label: fig-llm-tools
-#| fig-cap: "Most popular LLM tools"
-#| fig-height: 7
-
-comp |>
-  filter(!is.na(llm_tools_used)) |>
-  mutate(tool_list = str_split(llm_tools_used, ",\\s*")) |>
-  unnest(tool_list) |>
-  count(tool_list, sort = TRUE) |>
-  ggplot(aes(x = reorder(tool_list, n), y = n)) +
-  geom_col(fill = "#A23B72", alpha = 0.8) +
-  geom_text(aes(label = n), hjust = -0.3, size = 3.5) +
-  coord_flip() +
-  labs(
-    x = "",
-    y = "\nNumber of users",
-    title = "LLM Tool Adoption"
-  ) +
-  theme_few() +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-```
-
-### LLM Usage by Programming Experience
-
-```{r}
-#| label: fig-llm-by-prog-exp
-#| fig-cap: "LLM usage frequency by programming experience"
-#| fig-height: 6
-#| fig-width: 10
-
-comp |>
   mutate(
-    prog_exp = case_when(
-      str_detect(experience_programming_general, "never") ~ "Never",
-      str_detect(experience_programming_general, "few lines") ~ "Beginner",
-      str_detect(experience_programming_general, "couple of pages") ~ "Intermediate",
-      str_detect(experience_programming_general, "larger pieces") ~ "Advanced",
-      TRUE ~ NA_character_
-    ),
-    llm_freq = case_when(
-      str_detect(llm_usage, "do not use") ~ "No use",
-      str_detect(llm_usage, "occasionally") ~ "Occasional",
-      str_detect(llm_usage, "regularly") ~ "Regular",
-      str_detect(llm_usage, "rely") ~ "Heavy",
-      TRUE ~ NA_character_
-    )
+    percentage = round(n / total_respondents * 100, 1),
+    percentage_formatted = str_glue("{percentage}%")
   ) |>
-  filter(!is.na(prog_exp) & !is.na(llm_freq)) |>
-  count(prog_exp, llm_freq) |>
-  ggplot(aes(x = prog_exp, y = n, fill = llm_freq)) +
-  geom_col(position = "dodge", alpha = 0.8) +
-  labs(
-    x = "\nProgramming Experience",
-    y = "Number of respondents\n",
-    fill = "LLM Usage",
-    title = "LLM Adoption Patterns by Programming Experience"
-  ) +
-  theme_few() +
-  scale_fill_brewer(palette = "Set2")
+  rename(Tool = tool_list, Count = n, `% of Team` = percentage_formatted) |>
+  select(Tool, Count, `% of Team`) |>
+  kable()
 ```
 
 ## Skill Combinations & Patterns
 
-### Programming Confidence
-
-```{r}
-#| label: fig-programming-confidence
-#| fig-cap: "Self-reported programming confidence"
-#| fig-height: 5
-
-confidence_levels <- c(
-  "I wouldn't know where to start.",
-  "I could struggle through by trial and error with a lot of web searches.",
-  "I could do it quickly with external help.",
-  "I could do it quickly with no use of external help."
-)
-
-comp |>
-  mutate(programming_confidence = factor(programming_confidence, levels = confidence_levels)) |>
-  count(programming_confidence) |>
-  drop_na() |>
-  mutate(programming_confidence = str_wrap(programming_confidence, 35)) |>
-  ggplot(aes(x = programming_confidence, y = n)) +
-  geom_col(fill = "#2E86AB", alpha = 0.8) +
-  geom_text(aes(label = n), vjust = -0.5, size = 4) +
-  labs(
-    x = "",
-    y = "\nNumber of respondents",
-    title = "Programming Confidence Levels"
-  ) +
-  theme_few() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8)) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
-```
-
 ### Skill Correlation Heatmap
 
-```{r}
-#| label: fig-skill-correlation
-#| fig-cap: "Correlation between different skill levels"
-#| fig-height: 7
-#| fig-width: 9
-
-# Create numeric scores for all skills
-skill_matrix <- comp |>
-  mutate(
-    prog_general = exp_score(experience_programming_general),
-    prog_r = exp_score(experience_programming_r),
-    prog_python = exp_score(experience_programming_python),
-    git = case_when(
-      str_detect(experience_git, "never") ~ 0,
-      str_detect(experience_git, "occasionally") ~ 1,
-      str_detect(experience_git, "regularly") ~ 2,
-      str_detect(experience_git, "extensively") ~ 3,
-      TRUE ~ NA_real_
-    ),
-    github = case_when(
-      str_detect(experience_github, "never") ~ 0,
-      str_detect(experience_github, "occasionally") ~ 1,
-      str_detect(experience_github, "regularly") ~ 2,
-      str_detect(experience_github, "extensively") ~ 3,
-      TRUE ~ NA_real_
-    ),
-    cli = case_when(
-      str_detect(cli_usage, "never") ~ 0,
-      str_detect(cli_usage, "occasionally") ~ 1,
-      str_detect(cli_usage, "regularly") ~ 2,
-      str_detect(cli_usage, "extensively") ~ 3,
-      TRUE ~ NA_real_
-    ),
-    llm_freq = case_when(
-      str_detect(llm_usage, "do not") ~ 0,
-      str_detect(llm_usage, "occasionally") ~ 1,
-      str_detect(llm_usage, "regularly") ~ 2,
-      str_detect(llm_usage, "rely") ~ 3,
-      TRUE ~ NA_real_
-    )
-  ) |>
-  select(prog_general, prog_r, prog_python, git, github, cli, llm_freq) |>
-  drop_na()
-
-# Compute correlation matrix
-cor_matrix <- cor(skill_matrix)
-
-# Convert to long format for ggplot
-cor_long <- cor_matrix |>
-  as.data.frame() |>
-  rownames_to_column("var1") |>
-  pivot_longer(-var1, names_to = "var2", values_to = "correlation")
-
-# Rename variables for better labels
-var_labels <- c(
-  prog_general = "Programming\nGeneral",
-  prog_r = "R",
-  prog_python = "Python",
-  git = "Git",
-  github = "GitHub",
-  cli = "CLI",
-  llm_freq = "LLM\nUsage"
-)
-
-cor_long |>
-  mutate(
-    var1 = recode(var1, !!!var_labels),
-    var2 = recode(var2, !!!var_labels)
-  ) |>
-  ggplot(aes(x = var1, y = var2, fill = correlation)) +
-  geom_tile(color = "white") +
-  geom_text(aes(label = round(correlation, 2)), size = 3.5) +
-  scale_fill_gradient2(
-    low = "#2E86AB", mid = "white", high = "#A23B72",
-    midpoint = 0, limits = c(-1, 1)
-  ) +
-  labs(
-    x = "",
-    y = "",
-    fill = "Correlation",
-    title = "Skill Correlation Matrix"
-  ) +
-  theme_few() +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    panel.grid = element_blank()
-  ) +
-  coord_fixed()
-```
 
 ### Individual Skill Profiles
 
@@ -658,36 +413,35 @@ cor_long |>
 #| fig-height: 10
 #| fig-width: 11
 
-skill_matrix_with_id <- comp |>
+skill_matrix_with_id <- comp_processed |>
   mutate(
     prog_general = exp_score(experience_programming_general),
     prog_r = exp_score(experience_programming_r),
     prog_python = exp_score(experience_programming_python),
     git = case_when(
-      str_detect(experience_git, "never") ~ 0,
-      str_detect(experience_git, "occasionally") ~ 1,
-      str_detect(experience_git, "regularly") ~ 2,
-      str_detect(experience_git, "extensively") ~ 3,
+      str_detect(as.character(experience_git), "never") ~ 0,
+      str_detect(as.character(experience_git), "occasionally") ~ 1,
+      str_detect(as.character(experience_git), "regularly") ~ 2,
+      str_detect(as.character(experience_git), "extensively") ~ 3,
       TRUE ~ NA_real_
     ),
     github = case_when(
-      str_detect(experience_github, "never") ~ 0,
-      str_detect(experience_github, "occasionally") ~ 1,
-      str_detect(experience_github, "regularly") ~ 2,
-      str_detect(experience_github, "extensively") ~ 3,
+      str_detect(as.character(experience_github), "never") ~ 0,
+      str_detect(as.character(experience_github), "occasionally") ~ 1,
+      str_detect(as.character(experience_github), "regularly") ~ 2,
+      str_detect(as.character(experience_github), "extensively") ~ 3,
       TRUE ~ NA_real_
     ),
     cli = case_when(
-      str_detect(cli_usage, "never") ~ 0,
-      str_detect(cli_usage, "occasionally") ~ 1,
-      str_detect(cli_usage, "regularly") ~ 2,
-      str_detect(cli_usage, "extensively") ~ 3,
+      str_detect(as.character(cli_usage), "never") ~ 0,
+      str_detect(as.character(cli_usage), "occasionally") ~ 1,
+      str_detect(as.character(cli_usage), "regularly") ~ 2,
+      str_detect(as.character(cli_usage), "extensively") ~ 3,
       TRUE ~ NA_real_
     ),
-    respondent = str_glue("ID-{id}")
+    respondent = as.character(str_glue("ID-{id}"))
   ) |>
-  select(respondent, prog_general, prog_r, prog_python, git, github, cli) |>
-  drop_na()
+  select(respondent, prog_general, prog_r, prog_python, git, github, cli)
 
 # Create a heatmap-style visualization
 skill_matrix_with_id |>
@@ -695,15 +449,20 @@ skill_matrix_with_id |>
   mutate(
     skill = factor(skill,
                    levels = c("prog_general", "prog_r", "prog_python", "git", "github", "cli"),
-                   labels = c("Programming\nGeneral", "R", "Python", "Git", "GitHub", "CLI"))
+                   labels = c("Programming\nGeneral", "R", "Python", "Git", "GitHub", "CLI")),
+    level_factor = factor(level,
+                         levels = 0:3,
+                         labels = c("None", "Beginner", "Intermediate", "Advanced"))
   ) |>
-  ggplot(aes(x = skill, y = respondent, fill = level)) +
+  mutate(respondent = factor(respondent, levels = unique(skill_matrix_with_id$respondent))) |>
+  ggplot(aes(x = skill, y = respondent, fill = level_factor)) +
   geom_tile(color = "white", linewidth = 0.5) +
-  scale_fill_gradient2(
-    low = "#FFFFFF", mid = "#A23B72", high = "#2E86AB",
-    midpoint = 1.5, limits = c(0, 3),
-    breaks = 0:3,
-    labels = c("None", "Beginner", "Intermediate", "Advanced")
+  scale_fill_manual(
+    values = c("None" = "#FFFFFF",
+               "Beginner" = ggthemes::colorblind_pal()(8)[2],
+               "Intermediate" = ggthemes::colorblind_pal()(8)[3],
+               "Advanced" = ggthemes::colorblind_pal()(8)[4]),
+    na.value = "grey90"
   ) +
   labs(
     x = "",
@@ -717,78 +476,6 @@ skill_matrix_with_id |>
     axis.text.y = element_text(size = 8),
     panel.grid = element_blank()
   )
-```
-
-### Team Skill Segments
-
-```{r}
-#| label: fig-skill-segments
-#| fig-cap: "Team skill segments based on overall experience"
-#| fig-height: 6
-
-comp |>
-  mutate(
-    segment = case_when(
-      str_detect(experience_programming_general, "never|few lines") &
-        str_detect(experience_git, "never|occasionally") ~ "Beginners",
-      str_detect(experience_programming_general, "couple of pages") &
-        str_detect(experience_git, "regularly|occasionally") ~ "Intermediate",
-      str_detect(experience_programming_general, "larger pieces") &
-        str_detect(experience_git, "extensively|regularly") ~ "Advanced",
-      TRUE ~ "Mixed"
-    )
-  ) |>
-  count(segment) |>
-  mutate(
-    percentage = round(n / sum(n) * 100, 1),
-    label = str_glue("{segment}\n(n={n}, {percentage}%)")
-  ) |>
-  ggplot(aes(x = "", y = n, fill = segment)) +
-  geom_col(width = 1, alpha = 0.8) +
-  geom_text(aes(label = str_glue("{n}\n({percentage}%)")),
-            position = position_stack(vjust = 0.5),
-            size = 4) +
-  coord_polar(theta = "y") +
-  labs(
-    title = "Team Skill Segments",
-    fill = "Segment"
-  ) +
-  theme_void() +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
-    legend.position = "bottom"
-  ) +
-  scale_fill_brewer(palette = "Set2")
-```
-
-```{r}
-#| label: tbl-segment-characteristics
-#| tbl-cap: "Characteristics of team skill segments"
-
-comp |>
-  mutate(
-    segment = case_when(
-      str_detect(experience_programming_general, "never|few lines") &
-        str_detect(experience_git, "never|occasionally") ~ "Beginners",
-      str_detect(experience_programming_general, "couple of pages") &
-        str_detect(experience_git, "regularly|occasionally") ~ "Intermediate",
-      str_detect(experience_programming_general, "larger pieces") &
-        str_detect(experience_git, "extensively|regularly") ~ "Advanced",
-      TRUE ~ "Mixed"
-    ),
-    r_exp = exp_score(experience_programming_r),
-    python_exp = exp_score(experience_programming_python),
-    uses_llm = !str_detect(llm_usage, "do not use")
-  ) |>
-  group_by(segment) |>
-  summarise(
-    count = n(),
-    avg_r_exp = round(mean(r_exp, na.rm = TRUE), 2),
-    avg_python_exp = round(mean(python_exp, na.rm = TRUE), 2),
-    pct_llm_users = round(sum(uses_llm, na.rm = TRUE) / n() * 100, 1)
-  ) |>
-  arrange(desc(count)) |>
-  kable(col.names = c("Segment", "Count", "Avg R Exp", "Avg Python Exp", "% LLM Users"))
 ```
 
 ## Data Storage & Workflow
@@ -841,81 +528,3 @@ comp |>
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 ```
 
-## Summary
-
-```{r}
-#| label: summary-calculations
-#| echo: false
-
-total_respondents <- nrow(comp)
-
-advanced_programmers <- comp |>
-  filter(str_detect(experience_programming_general, "larger pieces")) |>
-  nrow()
-
-r_users <- comp |>
-  filter(!str_detect(experience_programming_r, "none")) |>
-  nrow()
-
-python_users <- comp |>
-  filter(!str_detect(experience_programming_python, "none")) |>
-  nrow()
-
-git_advanced <- comp |>
-  filter(str_detect(experience_git, "extensively")) |>
-  nrow()
-
-llm_users <- comp |>
-  filter(!str_detect(llm_usage, "do not use")) |>
-  nrow()
-
-llm_heavy <- comp |>
-  filter(str_detect(llm_usage, "rely")) |>
-  nrow()
-
-top_ide <- comp |>
-  filter(!is.na(ides_used)) |>
-  mutate(ide_list = str_split(ides_used, ",\\s*")) |>
-  unnest(ide_list) |>
-  count(ide_list, sort = TRUE) |>
-  slice_max(n, n = 1) |>
-  pull(ide_list)
-
-top_llm <- comp |>
-  filter(!is.na(llm_tools_used)) |>
-  mutate(tool_list = str_split(llm_tools_used, ",\\s*")) |>
-  unnest(tool_list) |>
-  count(tool_list, sort = TRUE) |>
-  slice_max(n, n = 1) |>
-  pull(tool_list)
-```
-
-This analysis examined computational competencies of **`r total_respondents`** team members at Global Health Engineering, based on a survey conducted in June 2025.
-
-### Key Findings:
-
-**Programming Skills:**
-
-- **`r advanced_programmers`** team members (`r round(advanced_programmers/total_respondents*100, 1)`%) have written and maintained larger pieces of software
-- **`r r_users`** members (`r round(r_users/total_respondents*100, 1)`%) have some R experience
-- **`r python_users`** members (`r round(python_users/total_respondents*100, 1)`%) have some Python experience
-- R experience is more common than Python experience overall
-
-**Version Control:**
-
-- **`r git_advanced`** members (`r round(git_advanced/total_respondents*100, 1)`%) use Git extensively for collaborative development
-- Strong positive correlation between Git and GitHub experience (r = `r round(cor(skill_matrix$git, skill_matrix$github), 2)`)
-
-**Tool Adoption:**
-
-- Most popular IDE: **`r top_ide`**
-- **`r llm_users`** members (`r round(llm_users/total_respondents*100, 1)`%) use LLMs for their work
-- **`r llm_heavy`** members (`r round(llm_heavy/total_respondents*100, 1)`%) rely on LLMs several times daily
-- Most popular LLM tool: **`r top_llm`**
-
-**Interesting Patterns:**
-
-- LLM adoption is high across all programming experience levels
-- Strong correlation between general programming experience and both R/Python skills
-- Team shows diversity in skill levels, enabling peer learning opportunities
-- Majority prefer machine-readable data formats (CSV/JSON) over spreadsheets
