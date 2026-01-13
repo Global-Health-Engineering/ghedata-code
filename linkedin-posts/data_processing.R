@@ -60,5 +60,5 @@ linkedin_posts <- data_in |>
 # Export as CSV
 readr::write_csv(
   linkedin_posts,
-  here::here("linkedin-posts", "linkedin-posts.csv")
+  here::here("linkedin-posts/clean-data", "linkedin-posts.csv")
 )

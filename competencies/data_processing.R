@@ -49,5 +49,5 @@ computational <- pre_course_survey |>
 # Export as CSV
 readr::write_csv(
   computational,
-  here::here("competencies", "computational.csv")
+  here::here("competencies/clean-data", "computational.csv")
 )
