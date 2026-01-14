@@ -374,11 +374,11 @@ comp_processed |>
   scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
 ```
 
-### LLM Tools Used
+### AI Tools Used
 
 ```{r}
 #| label: tbl-llm-tools
-#| tbl-cap: "LLM tools and platforms used by team"
+#| tbl-cap: "AI tools and platforms used by team"
 
 # Calculate total respondents for percentage calculation
 total_respondents <- nrow(comp)
@@ -399,6 +399,56 @@ comp |>
   select(Tool, Count, `% of Team`) |>
   kable()
 ```
+
+ChatGPT (OpenAI) leads as the most widely adopted AI tool, used by nearly 90% of the team, followed by Google's Gemini and Anthropic's Claude, each used by approximately half of the team members. The diversity of tools adopted reflects the team's exploration of different AI platforms, ranging from general-purpose LLMs to specialized research assistants and code-completion tools, with many team members using multiple tools to leverage their complementary strengths. This high adoption rate across various platforms demonstrates the team's active engagement with AI-assisted workflows for research, coding, and problem-solving tasks.
+
+```{r}
+#| label: fig-llm-tools
+#| fig-cap: "Most popular AI tools among team"
+#| fig-height: 7
+
+# Calculate total respondents for percentage calculation
+total_respondents <- nrow(comp)
+
+comp_plot <- comp |>
+  select(llm_tools_used) |>
+  filter(!is.na(llm_tools_used)) |>
+  # Split on comma followed by space, but not when inside parentheses
+  mutate(tool_list = str_split(llm_tools_used, ",\\s*(?![^()]*\\))")) |>
+  unnest(tool_list) |>
+  mutate(tool_list = str_trim(tool_list)) |>
+  count(tool_list, sort = TRUE) |>
+  mutate(percentage = round(n / total_respondents * 100, 1)) |>
+  ggplot(aes(x = reorder(tool_list, n), y = n)) +
+  geom_col(fill = ggthemes::colorblind_pal()(8)[2], alpha = 0.8) +
+  geom_text(aes(label = str_glue("{n} ({percentage}%)")), hjust = -0.1, size = 3.5) +
+  coord_flip() +
+  labs(
+    x = "",
+    y = "\nNumber of users",
+    title = "AI Tool Adoption",
+    subtitle = str_glue("Based on {total_respondents} team members in June 2025 (multiple selections possible)") # TODO: add a line break in subtitle, so it fits on saved plot
+  ) +
+  theme_few() +
+  theme(
+    panel.border = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.15)))
+
+comp_plot
+
+# Save high-resolution version
+ggsave(
+  plot = comp_plot,
+  filename = here::here("competencies/figures/ai-tools.png"),
+  width = 12,
+  height = 7,
+  dpi = 300
+)
+```
+
 
 ## Skill Combinations & Patterns
 
