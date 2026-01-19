@@ -1,0 +1,273 @@
+---
+title: "GHE LinkedIn Posts"
+format:
+  html:
+    code-fold: true
+    code-summary: "Display code"
+    toc: true
+    toc-depth: 4
+    toc-location: left
+execute:
+  message: false
+  warning: false
+editor_options: 
+  chunk_output_type: console
+---
+
+This analysis explores LinkedIn post content and patterns from Global Health Engineering team members. Posts are scheduled and authored by various team members, with content anonymized for privacy.
+
+## Data Processing Pipeline
+
+::: {style="width: 100%; max-width: 1200px;"}
+```{mermaid}
+%%| fig-width: 10
+flowchart TD
+    raw["Google Sheets<br/>(raw data)"]
+
+    subgraph script["data_processing.R"]
+        p1["Read from Google Sheets"]
+        p2["Clean column names"]
+        p3["Anonymize author names"]
+        p4["Filter out breaks/empty posts"]
+    end
+
+    subgraph clean["clean-data/"]
+        c1["linkedin-posts.csv"]
+    end
+
+    raw --> p1
+    p1 --> p2
+    p2 --> p3
+    p3 --> p4
+    p4 --> c1
+
+    c1 --> analysis["analysis.qmd"]
+
+    style raw fill:#e1f5ff
+    style script fill:#fff4e1
+    style clean fill:#e8f5e9
+```
+:::
+
+The data is extracted from a Google Sheets document, processed to anonymize team member names (using consistent random IDs), and filtered to remove breaks and empty posts. The resulting dataset contains scheduled post dates, anonymized authors, and full post text content.
+
+This README must be rendered with the following command in your terminal: `quarto render analysis.qmd --to gfm --output README.md`
+
+```{r}
+#| label: setup
+#| include: false
+library(tidyverse)
+library(lubridate)
+library(ggthemes)
+library(scales)
+library(knitr)
+
+# Set theme for all plots
+theme_set(theme_few())
+
+# Load data
+posts <- read_csv(here::here("linkedin-posts/clean-data/linkedin-posts.csv")) |>
+  mutate(due = as_date(due)) 
+```
+
+## Data Overview
+
+The data covers the period from `r format(min(posts$due), "%Y-%m-%d")` to `r format(max(posts$due), "%Y-%m-%d")`, with a total of `r nrow(posts)` posts authored by `r n_distinct(posts$name)` team members.
+
+## Author Activity
+
+### Posts by Author
+
+```{r}
+#| label: fig-posts-by-author
+#| fig-cap: "Number of posts by team member"
+posts |>
+  count(name) |>
+  arrange(desc(n)) |>
+  ggplot(aes(x = reorder(name, n), y = n)) +
+  geom_col(fill = "#A23B72", alpha = 0.8) +
+  geom_text(aes(label = n), hjust = -0.3, size = 3.5) +
+  coord_flip() +
+  labs(
+    x = "",
+    y = "\nNumber of posts",
+    title = "Post Count by Author"
+  ) +
+  theme_few() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1)))
+```
+
+### Author Contribution Distribution
+
+```{r}
+#| label: tbl-author-stats
+#| tbl-cap: "Author posting statistics"
+posts |>
+  count(name, name = "posts") |>
+  arrange(desc(posts)) |>
+  mutate(
+    percentage = round(posts / sum(posts) * 100, 1),
+    cumulative_pct = round(cumsum(posts) / sum(posts) * 100, 1)
+  ) |>
+  kable()
+```
+
+## Content Analysis
+
+### Post Length Distribution
+
+```{r}
+#| label: compute-text-stats
+# Compute text statistics
+posts_with_stats <- posts |>
+  mutate(
+    char_count = str_length(text),
+    word_count = str_count(text, "\\w+"),
+    line_count = str_count(text, "\n") + 1
+  )
+```
+
+```{r}
+#| label: tbl-text-summary
+#| tbl-cap: "Post length summary statistics"
+posts_with_stats |>
+  summarise(
+    `Mean Characters` = round(mean(char_count, na.rm = TRUE)),
+    `Median Characters` = round(median(char_count, na.rm = TRUE)),
+    `Mean Words` = round(mean(word_count, na.rm = TRUE)),
+    `Median Words` = round(median(word_count, na.rm = TRUE)),
+    `Max Characters` = max(char_count, na.rm = TRUE),
+    `Min Characters` = min(char_count, na.rm = TRUE)
+  ) |>
+  pivot_longer(everything(), names_to = "Metric", values_to = "Value") |>
+  kable()
+```
+
+### Character Count Distribution
+
+```{r}
+#| label: fig-char-distribution
+#| fig-cap: "Distribution of post character counts"
+posts_with_stats |>
+  ggplot(aes(x = char_count)) +
+  geom_histogram(bins = 20, fill = "#2E86AB", alpha = 0.8) +
+  geom_vline(aes(xintercept = mean(char_count, na.rm = TRUE)),
+             color = "red", linetype = "dashed", linewidth = 1) +
+  labs(
+    x = "\nCharacter count",
+    y = "Number of posts\n",
+    title = "Post Length Distribution",
+    caption = "Red line indicates mean"
+  ) +
+  theme_few()
+```
+
+### Word Count Distribution
+
+```{r}
+#| label: fig-word-distribution
+#| fig-cap: "Distribution of post word counts"
+posts_with_stats |>
+  ggplot(aes(x = word_count)) +
+  geom_histogram(bins = 20, fill = "#A23B72", alpha = 0.8) +
+  geom_vline(aes(xintercept = mean(word_count, na.rm = TRUE)),
+             color = "red", linetype = "dashed", linewidth = 1) +
+  labs(
+    x = "\nWord count",
+    y = "Number of posts\n",
+    title = "Post Word Count Distribution",
+    caption = "Red line indicates mean"
+  ) +
+  theme_few()
+```
+
+### Content Keywords
+
+```{r}
+#| label: tbl-top-words
+#| tbl-cap: "Top 20 most frequent words (excluding common stop words)"
+# Simple word frequency analysis
+library(tidytext)
+
+posts |>
+  unnest_tokens(word, text) |>
+  anti_join(stop_words, by = "word") |>
+  filter(str_detect(word, "^[a-z]+$")) |>  # Only alphabetic words
+  filter(word != "https") |> 
+  count(word, sort = TRUE) |>
+  slice_max(n, n = 20) |>
+  kable()
+```
+
+### Two-Word Phrases (Bigrams)
+
+```{r}
+#| label: tbl-top-bigrams
+#| tbl-cap: "Top 20 most frequent two-word phrases"
+
+posts |>
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) |>
+  filter(!is.na(bigram)) |>
+  separate(bigram, into = c("word1", "word2"), sep = " ", remove = FALSE) |>
+  filter(!word1 %in% stop_words$word) |>
+  filter(!word2 %in% stop_words$word) |>
+  filter(str_detect(word1, "^[a-z]+$")) |>
+  filter(str_detect(word2, "^[a-z]+$")) |>
+  filter(word1 != "https" & word2 != "https") |>
+  count(bigram, sort = TRUE) |>
+  slice_max(n, n = 20) |>
+  kable()
+```
+
+### Three-Word Phrases (Trigrams)
+
+```{r}
+#| label: tbl-top-trigrams
+#| tbl-cap: "Top 20 most frequent three-word phrases"
+
+posts |>
+  unnest_tokens(trigram, text, token = "ngrams", n = 3) |>
+  filter(!is.na(trigram)) |>
+  separate(trigram, into = c("word1", "word2", "word3"), sep = " ", remove = FALSE) |>
+  filter(!word1 %in% stop_words$word) |>
+  filter(!word2 %in% stop_words$word) |>
+  filter(!word3 %in% stop_words$word) |>
+  filter(str_detect(word1, "^[a-z]+$")) |>
+  filter(str_detect(word2, "^[a-z]+$")) |>
+  filter(str_detect(word3, "^[a-z]+$")) |>
+  filter(word1 != "https" & word2 != "https" & word3 != "https") |>
+  count(trigram, sort = TRUE) |>
+  slice_max(n, n = 20) |>
+  kable()
+```
+
+```{r}
+#| label: fig-top-trigrams
+#| fig-cap: "Top 15 most frequent three-word phrases"
+
+posts |>
+  unnest_tokens(trigram, text, token = "ngrams", n = 3) |>
+  filter(!is.na(trigram)) |>
+  separate(trigram, into = c("word1", "word2", "word3"), sep = " ", remove = FALSE) |>
+  filter(!word1 %in% stop_words$word) |>
+  filter(!word2 %in% stop_words$word) |>
+  filter(!word3 %in% stop_words$word) |>
+  filter(str_detect(word1, "^[a-z]+$")) |>
+  filter(str_detect(word2, "^[a-z]+$")) |>
+  filter(str_detect(word3, "^[a-z]+$")) |>
+  filter(word1 != "https" & word2 != "https" & word3 != "https") |>
+  count(trigram, sort = TRUE) |>
+  slice_max(n, n = 15) |>
+  ggplot(aes(x = reorder(trigram, n), y = n)) +
+  geom_col(fill = "#A23B72", alpha = 0.8) +
+  geom_text(aes(label = n), hjust = -0.3, size = 3.5) +
+  coord_flip() +
+  labs(
+    x = "",
+    y = "\nFrequency",
+    title = "Most Common Three-Word Phrases"
+  ) +
+  theme_few() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1)))
+```
+
