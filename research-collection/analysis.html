@@ -135,7 +135,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">paste0</span>(<span class="st">"Total publications: "</span>, <span class="fu">nrow</span>(ghe_research_collection))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] "Total publications: 119"</code></pre>
+<pre><code>[1] "Total publications: 120"</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>ghe_research_collection <span class="sc">|&gt;</span> </span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(publication_type) <span class="sc">|&gt;</span> </span>
@@ -158,7 +158,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td style="text-align: left;">Master Thesis</td>
-<td style="text-align: right;">22</td>
+<td style="text-align: right;">23</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Bachelor Thesis</td>
@@ -319,18 +319,18 @@ Figure&nbsp;1: Publications by year, colored by type group. Student papers repre
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Student Paper</td>
-<td style="text-align: right;">56</td>
-<td style="text-align: right;">47.1</td>
+<td style="text-align: right;">57</td>
+<td style="text-align: right;">47.5</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Scientific Article</td>
 <td style="text-align: right;">41</td>
-<td style="text-align: right;">34.5</td>
+<td style="text-align: right;">34.2</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Other publication</td>
 <td style="text-align: right;">16</td>
-<td style="text-align: right;">13.4</td>
+<td style="text-align: right;">13.3</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Dataset</td>
@@ -341,7 +341,7 @@ Figure&nbsp;1: Publications by year, colored by type group. Student papers repre
 </table>
 </div>
 </div>
-<p>Student papers (including Bachelor and Master theses) represent <strong>47.1%</strong> of the collection, followed by scientific articles at <strong>34.5%</strong>.</p>
+<p>Student papers (including Bachelor and Master theses) represent <strong>47.5%</strong> of the collection, followed by scientific articles at <strong>34.2%</strong>.</p>
 </section>
 </section>
 <section id="open-access-licensing-trends" class="level2">
@@ -442,17 +442,17 @@ Figure&nbsp;2: Proportion of publications by license type over time. Green indic
 </tr>
 <tr class="odd">
 <td style="text-align: right;">2025</td>
-<td style="text-align: right;">19</td>
+<td style="text-align: right;">20</td>
 <td style="text-align: right;">1</td>
 <td style="text-align: right;">2</td>
-<td style="text-align: right;">22</td>
-<td style="text-align: right;">86.4</td>
+<td style="text-align: right;">23</td>
+<td style="text-align: right;">87.0</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<p>CC BY 4.0 adoption has increased from <strong>70.6%</strong> in 2021 to <strong>86.4%</strong> in 2025.</p>
+<p>CC BY 4.0 adoption has increased from <strong>70.6%</strong> in 2021 to <strong>87%</strong> in 2025.</p>
 </section>
 </section>
 <section id="doi-assignment-patterns" class="level2">
@@ -568,10 +568,10 @@ Figure&nbsp;3: DOI assignment by publication type group. Green indicates publica
 </tr>
 <tr class="odd">
 <td style="text-align: right;">2025</td>
-<td style="text-align: right;">21</td>
-<td style="text-align: right;">1</td>
 <td style="text-align: right;">22</td>
-<td style="text-align: right;">95.5</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">23</td>
+<td style="text-align: right;">95.7</td>
 </tr>
 </tbody>
 </table>
@@ -579,9 +579,9 @@ Figure&nbsp;3: DOI assignment by publication type group. Green indicates publica
 </div>
 <p><strong>Key observations:</strong></p>
 <ul>
-<li>Overall DOI adoption: <strong>83.2%</strong></li>
-<li>Strong improvement: from <strong>70.6%</strong> in 2021 to <strong>95.5%</strong> in 2025</li>
-<li><strong>All student papers have DOIs</strong> (56/56), demonstrating excellent metadata practices</li>
+<li>Overall DOI adoption: <strong>83.3%</strong></li>
+<li>Strong improvement: from <strong>70.6%</strong> in 2021 to <strong>95.7%</strong> in 2025</li>
+<li><strong>All student papers have DOIs</strong> (57/57), demonstrating excellent metadata practices</li>
 <li><strong>Datasets have the lowest DOI adoption</strong>: all 6 datasets currently lack DOIs</li>
 </ul>
 </section>
@@ -596,7 +596,7 @@ Figure&nbsp;3: DOI assignment by publication type group. Green indicates publica
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Publications without license:"</span>, <span class="fu">nrow</span>(no_license), <span class="st">"out of"</span>, <span class="fu">nrow</span>(ghe_research_collection), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Publications without license: 20 out of 119 </code></pre>
+<pre><code>Publications without license: 20 out of 120 </code></pre>
 </div>
 </div>
 </section>
@@ -608,7 +608,7 @@ Figure&nbsp;3: DOI assignment by publication type group. Green indicates publica
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Publications without DOI:"</span>, <span class="fu">nrow</span>(no_doi), <span class="st">"out of"</span>, <span class="fu">nrow</span>(ghe_research_collection), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Publications without DOI: 20 out of 119 </code></pre>
+<pre><code>Publications without DOI: 20 out of 120 </code></pre>
 </div>
 </div>
 </section>
@@ -706,43 +706,43 @@ Figure&nbsp;4: Publications missing both license and DOI by year and type. These
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Land use in the Seychelles – Rethinking the Sustainability of Tourism</td>
-<td style="text-align: right;">215</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Air quality monitoring from open waste and incinerator burning in Cape Maclear, Malawi</td>
-<td style="text-align: right;">181</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Plastic separation - A review</td>
-<td style="text-align: right;">171</td>
+<td style="text-align: right;">126</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Construction of a Glass Crusher and Evaluation of Waste Valorization Pathways for Cape Maclear, Malawi</td>
-<td style="text-align: right;">127</td>
+<td style="text-align: right;">108</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Transforming Waste into Value: A Study on PET Recycling for Insulation Solutions in Malawi</td>
-<td style="text-align: right;">116</td>
+<td style="text-align: left;">Plastic separation - A review</td>
+<td style="text-align: right;">100</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Design of an HDPE bottle collection and pre-cleaning system for recycling in Blantyre, Malawi</td>
-<td style="text-align: right;">113</td>
-</tr>
-<tr class="odd">
 <td style="text-align: left;">Development of a Low-Cost Incinerator in Cape Maclear, Malawi</td>
-<td style="text-align: right;">101</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Microcontroller Based Particulate Matter Monitors Utilising the Alphasense OPC-N3</td>
-<td style="text-align: right;">101</td>
+<td style="text-align: right;">91</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Exploring Injection Molding for the Development of a Sensor Casings in Biogas Monitoring System</td>
-<td style="text-align: right;">98</td>
+<td style="text-align: left;">Air quality monitoring from open waste and incinerator burning in Cape Maclear, Malawi</td>
+<td style="text-align: right;">89</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Development of Pediatric Intravenous Flow Rate Monitor for Humanitarian Settings</td>
+<td style="text-align: right;">86</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Urine-Diverting Dry Toilet Design, Manifacturing, and Performance Testing of Earth Concrete</td>
+<td style="text-align: right;">78</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Tipping aid for loading small trucks on waste collection tours</td>
-<td style="text-align: right;">97</td>
+<td style="text-align: right;">75</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Development of a Remote Communications Infrastructure for an Off-Grid Energy System</td>
+<td style="text-align: right;">69</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Designing a small-scale screw press for blackwater dewatering</td>
+<td style="text-align: right;">66</td>
 </tr>
 </tbody>
 </table>
@@ -822,23 +822,23 @@ Figure&nbsp;6: Total visits aggregated by publication type group.
 <h3 class="anchored" data-anchor-id="publication-growth-composition">1. Publication Growth &amp; Composition</h3>
 <ul>
 <li>The collection has grown from <strong>17</strong> publications in 2021 to <strong>36</strong> in 2024</li>
-<li>Student work dominates (<strong>56 out of 119 = 47.1%</strong>), including Master theses, Bachelor theses, and student papers</li>
-<li>Journal articles are the single largest type (<strong>39 publications, 32.8%</strong>)</li>
+<li>Student work dominates (<strong>57 out of 120 = 47.5%</strong>), including Master theses, Bachelor theses, and student papers</li>
+<li>Journal articles are the single largest type (<strong>39 publications, 32.5%</strong>)</li>
 </ul>
 </section>
 <section id="open-access-adoption-is-strong" class="level3">
 <h3 class="anchored" data-anchor-id="open-access-adoption-is-strong">2. Open Access Adoption is Strong</h3>
 <ul>
 <li><strong>~70-86% of publications use CC BY 4.0</strong> (the most permissive Creative Commons license) across all years</li>
-<li>Positive trend: 2025 shows <strong>86.4%</strong> CC BY 4.0 adoption vs.&nbsp;70.6% in 2021</li>
+<li>Positive trend: 2025 shows <strong>87%</strong> CC BY 4.0 adoption vs.&nbsp;70.6% in 2021</li>
 <li>“Copyright” and “No license” publications are decreasing proportionally over time</li>
 </ul>
 </section>
 <section id="doi-assignment-patterns-1" class="level3">
 <h3 class="anchored" data-anchor-id="doi-assignment-patterns-1">3. DOI Assignment Patterns</h3>
 <ul>
-<li>Overall <strong>83.2%</strong> have DOIs (99 out of 119)</li>
-<li>Strong improvement over time: from 70.6% in 2021 to <strong>95.5%</strong> in 2025</li>
+<li>Overall <strong>83.3%</strong> have DOIs (100 out of 120)</li>
+<li>Strong improvement over time: from 70.6% in 2021 to <strong>95.7%</strong> in 2025</li>
 <li>All student papers have DOIs, showing excellent metadata practices</li>
 <li><strong>Datasets represent a gap</strong>: none of the 6 datasets have DOIs</li>
 </ul>
