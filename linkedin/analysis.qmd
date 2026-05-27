@@ -26,23 +26,27 @@ flowchart TD
         p1["Content Metrics Processing"]
         p2["All Posts Processing"]
         p3["New Followers Processing"]
+        p4["Visitors Metrics Processing"]
     end
 
     subgraph clean["clean-data/"]
         c1["content-overview.csv"]
         c2["content_posts-overview.csv"]
         c3["new-followers.csv"]
+        c4["visitors-overview.csv"]
     end
 
     raw --> p1
     raw --> p2
     raw --> p3
+    raw --> p4
 
     p1 --> c1
     p2 --> c2
     p3 --> c3
+    p4 --> c4
 
-    c1 & c2 & c3 --> analysis["analysis.qmd"]
+    c1 & c2 & c3 & c4 --> analysis["analysis.qmd"]
 
     style raw fill:#e1f5ff
     style script fill:#fff4e1
@@ -63,7 +67,8 @@ library(ggthemes)
 
 followers  <- read_csv("clean-data/new-followers.csv")
 content_posts  <- read_csv("clean-data/content_posts-overview.csv")
-content_overview  <- read_csv("clean-data/content_posts-overview.csv")
+content_overview  <- read_csv("clean-data/content-overview.csv")
+visitors  <- read_csv("clean-data/visitors-overview.csv")
 ```
 
 ```{r}
@@ -103,14 +108,14 @@ content_overview %>%
 ### Likes
 
 ```{r}
-content_overview %>%
-  group_by(month = floor_date(date, "week")) %>%
+content_posts %>%
+  group_by(week = floor_date(date, "week")) %>%
   summarise(
     sum_value = sum(likes, na.rm = TRUE),
     mean_value = mean(likes, na.rm = TRUE),
     .groups = "drop"
   ) |>
-  ggplot(aes(x = month, y = sum_value)) +
+  ggplot(aes(x = week, y = sum_value)) +
   geom_smooth() +
   geom_col() +
   labs(
@@ -123,20 +128,20 @@ content_overview %>%
 ### Likes per impression
 
 ```{r}
-content_overview  |> 
-  group_by(month = floor_date(date, "week")) %>%
+content_posts |>
+  group_by(week = floor_date(date, "week")) %>%
   summarise(
     sum_likes = sum(likes, na.rm = TRUE),
     sum_impressions = sum(impressions, na.rm = TRUE),
     .groups = "drop"
-  ) |> 
+  ) |>
   mutate(likes_per_impression = sum_likes/sum_impressions) |>
-  ggplot(aes(x = month, y = likes_per_impression))  +
-    geom_col() +
+  ggplot(aes(x = week, y = likes_per_impression))  +
+  geom_col() +
   geom_smooth() +
   labs(
     x = "",
-    y = "Likes\n"
+    y = "Likes per impression\n"
   ) +
   theme_few()
 ```
@@ -144,16 +149,16 @@ content_overview  |>
 ### Number of posts
 
 ```{r}
-mean_n_posts  <- content_overview %>%
+mean_n_posts  <- content_posts %>%
   group_by(month = floor_date(date, "month")) %>%
-  count() |> 
-  ungroup() |> 
-  summarise(mean_posts = mean(n)) |> 
+  count() |>
+  ungroup() |>
+  summarise(mean_posts = mean(n)) |>
   pull()
 
-content_overview %>%
+content_posts %>%
   group_by(month = floor_date(date, "month")) %>%
-  count() |> 
+  count() |>
   ggplot(aes(x = month, y = n)) +
   geom_col() +
   geom_hline(yintercept = mean_n_posts, color = "red", linetype = "dotted") +
@@ -167,16 +172,16 @@ content_overview %>%
 ### Impressions per post
 
 ```{r}
-content_overview %>%
-  group_by(month = floor_date(date, "week")) %>%
+content_posts %>%
+  group_by(week = floor_date(date, "week")) %>%
   summarise(n_posts = n(),
-  impression = sum(impressions)) |> 
-    mutate(impressions_per_post = impression/n_posts) |> 
-  ggplot(aes(x = month, y = impressions_per_post)) +
+  impression = sum(impressions, na.rm = TRUE)) |>
+  mutate(impressions_per_post = impression/n_posts) |>
+  ggplot(aes(x = week, y = impressions_per_post)) +
   geom_smooth() +
   geom_col() +
   labs(x = "",
-  y = "Impressions\n") +
+  y = "Impressions per post\n") +
   theme_few()
 ```
 
@@ -215,42 +220,42 @@ cor(cor_data$cumulative_followers, cor_data$total_impressions)
 ## Deep dive on high performing weeks
 
 ```{r}
-impressions_deepdive  <- content_overview |> 
-  mutate(week = floor_date(date, unit = "week", week_start = 1)) |> 
-  group_by(week) |> 
-  mutate(total_impressions = sum(impressions)) |> 
+impressions_deepdive  <- content_posts |>
+  mutate(week = floor_date(date, unit = "week", week_start = 1)) |>
+  group_by(week) |>
+  mutate(total_impressions = sum(impressions, na.rm = TRUE)) |>
   filter(total_impressions > 7000)
 ```
 
 ```{r}
-content_overview |> 
+content_posts |>
   ggplot(aes(x = impressions, y = likes)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_few()
 
-cor(content_overview$impressions, content_overview$likes)
+cor(content_posts$impressions, content_posts$likes, use = "complete.obs")
 ```
 
 ```{r}
-content_overview_less7k <- content_overview |> 
+content_posts_less7k <- content_posts |>
   filter(impressions < 7000)
 
-content_overview_less7k |> 
+content_posts_less7k |>
   ggplot(aes(x = impressions, y = likes)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_few()
 
-cor(content_overview_less7k$impressions, content_overview_less7k$likes)
+cor(content_posts_less7k$impressions, content_posts_less7k$likes, use = "complete.obs")
 ```
 
 ```{r}
-paste0("Correlation Impressions / Likes: ", cor(content_overview$impressions, content_overview$likes))
-paste0("Correlation Impressions / Comments: ", cor(content_overview$impressions, content_overview$comments))
-paste0("Correlation Impressions / Reposts: ", cor(content_overview$impressions, content_overview$reposts))
-paste0("Correlation Impressions / Clicks: ", cor(content_overview$impressions, content_overview$clicks))
-paste0("Correlation Impressions / Engagement Rate: ", cor(content_overview$impressions, content_overview$engagement_rate))
+paste0("Correlation Impressions / Likes: ", cor(content_posts$impressions, content_posts$likes, use = "complete.obs"))
+paste0("Correlation Impressions / Comments: ", cor(content_posts$impressions, content_posts$comments, use = "complete.obs"))
+paste0("Correlation Impressions / Reposts: ", cor(content_posts$impressions, content_posts$reposts, use = "complete.obs"))
+paste0("Correlation Impressions / Clicks: ", cor(content_posts$impressions, content_posts$clicks, use = "complete.obs"))
+paste0("Correlation Impressions / Engagement Rate: ", cor(content_posts$impressions, content_posts$engagement_rate, use = "complete.obs"))
 ```
 
 ### Top 5: Likes
@@ -276,49 +281,125 @@ content_posts |>
 ### Top 5: Engagement Rate
 
 ```{r}
-content_posts |> 
-  slice_max(engagement_rate, n = 5) |> 
+content_posts |>
+  slice_max(engagement_rate, n = 5) |>
   select(post_title, engagement_rate) |>
   arrange(desc(engagement_rate)) |>
   knitr::kable(format = "html")
 ```
 
-
-### Click Through Rate 
+### Click Through Rate
 
 ```{r}
-content_overview |> 
-  slice_max(n = 5, order_by = click_through_rate_ctr) |> 
-  select(post_title, click_through_rate_ctr) |> 
+content_posts |>
+  slice_max(n = 5, order_by = click_through_rate_ctr) |>
+  select(post_title, click_through_rate_ctr) |>
   knitr::kable(format = "html")
 ```
 
 ```{r}
-hist(content_overview$click_through_rate_ctr, main = "Distribution of CTR", xlab = "Click Through Rate")
+hist(content_posts$click_through_rate_ctr, main = "Distribution of CTR", xlab = "Click Through Rate")
 ```
 
 ```{r}
-content_overview |> 
+content_posts |>
   ggplot(aes(x = impressions, y = click_through_rate_ctr)) +
   geom_point() +
   geom_smooth(method = "lm") +
   labs(x = "\nImpressions", y = "Click Through Rate\n") +
   theme_few()
 
-paste0("Correlation: ", cor(content_overview$impressions, content_overview$click_through_rate_ctr))
-round(quantile(x = content_overview$click_through_rate_ctr, probs = seq(0,1,.1)), digits = 2)
+paste0("Correlation: ", cor(content_posts$impressions, content_posts$click_through_rate_ctr, use = "complete.obs"))
+round(quantile(x = content_posts$click_through_rate_ctr, probs = seq(0,1,.1), na.rm = TRUE), digits = 2)
 ```
 
 ```{r}
-click_through_no_outliers  <- content_overview |> 
+click_through_no_outliers  <- content_posts |>
   filter(click_through_rate_ctr < 0.4)
 
-click_through_no_outliers |> 
+click_through_no_outliers |>
   ggplot(aes(x = impressions, y = click_through_rate_ctr)) +
   geom_point() +
   geom_smooth(method = "lm") +
   labs(x = "\nImpressions", y = "Click Through Rate\n") +
   theme_few()
 
-paste0("Correlation: ", cor(click_through_no_outliers$impressions, click_through_no_outliers$click_through_rate_ctr))
+paste0("Correlation: ", cor(click_through_no_outliers$impressions, click_through_no_outliers$click_through_rate_ctr, use = "complete.obs"))
+```
+
+## Visitors
+
+### Total page views per week
+
+```{r}
+visitors |>
+  group_by(week = floor_date(date, "week")) |>
+  summarise(page_views = sum(total_page_views, na.rm = TRUE), .groups = "drop") |>
+  ggplot(aes(x = week, y = page_views)) +
+  geom_col() +
+  geom_smooth() +
+  labs(
+    x = "",
+    y = "Page views\n"
+  ) +
+  theme_few()
+```
+
+### Total unique visitors per week
+
+```{r}
+visitors |>
+  group_by(week = floor_date(date, "week")) |>
+  summarise(unique_visitors = sum(total_unique_visitors, na.rm = TRUE), .groups = "drop") |>
+  ggplot(aes(x = week, y = unique_visitors)) +
+  geom_col() +
+  geom_smooth() +
+  labs(
+    x = "",
+    y = "Unique visitors\n"
+  ) +
+  theme_few()
+```
+
+### Page views by subpage
+
+```{r}
+visitors |>
+  group_by(week = floor_date(date, "week")) |>
+  summarise(
+    Overview = sum(overview_page_views, na.rm = TRUE),
+    Life = sum(life_page_views, na.rm = TRUE),
+    Jobs = sum(jobs_page_views, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  pivot_longer(-week, names_to = "subpage", values_to = "page_views") |>
+  ggplot(aes(x = week, y = page_views, fill = subpage)) +
+  geom_col() +
+  labs(
+    x = "",
+    y = "Page views\n",
+    fill = ""
+  ) +
+  theme_few()
+```
+
+### Desktop vs. mobile page views
+
+```{r}
+visitors |>
+  group_by(week = floor_date(date, "week")) |>
+  summarise(
+    Desktop = sum(total_page_views_desktop, na.rm = TRUE),
+    Mobile = sum(total_page_views_mobile, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  pivot_longer(-week, names_to = "device", values_to = "page_views") |>
+  ggplot(aes(x = week, y = page_views, fill = device)) +
+  geom_col() +
+  labs(
+    x = "",
+    y = "Page views\n",
+    fill = ""
+  ) +
+  theme_few()
 ```
