@@ -220,42 +220,42 @@ cor(cor_data$cumulative_followers, cor_data$total_impressions)
 ## Deep dive on high performing weeks
 
 ```{r}
-impressions_deepdive  <- content_overview |> 
-  mutate(week = floor_date(date, unit = "week", week_start = 1)) |> 
-  group_by(week) |> 
-  mutate(total_impressions = sum(impressions)) |> 
+impressions_deepdive  <- content_posts |>
+  mutate(week = floor_date(date, unit = "week", week_start = 1)) |>
+  group_by(week) |>
+  mutate(total_impressions = sum(impressions, na.rm = TRUE)) |>
   filter(total_impressions > 7000)
 ```
 
 ```{r}
-content_overview |> 
+content_posts |>
   ggplot(aes(x = impressions, y = likes)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_few()
 
-cor(content_overview$impressions, content_overview$likes)
+cor(content_posts$impressions, content_posts$likes, use = "complete.obs")
 ```
 
 ```{r}
-content_overview_less7k <- content_overview |> 
+content_posts_less7k <- content_posts |>
   filter(impressions < 7000)
 
-content_overview_less7k |> 
+content_posts_less7k |>
   ggplot(aes(x = impressions, y = likes)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_few()
 
-cor(content_overview_less7k$impressions, content_overview_less7k$likes)
+cor(content_posts_less7k$impressions, content_posts_less7k$likes, use = "complete.obs")
 ```
 
 ```{r}
-paste0("Correlation Impressions / Likes: ", cor(content_overview$impressions, content_overview$likes))
-paste0("Correlation Impressions / Comments: ", cor(content_overview$impressions, content_overview$comments))
-paste0("Correlation Impressions / Reposts: ", cor(content_overview$impressions, content_overview$reposts))
-paste0("Correlation Impressions / Clicks: ", cor(content_overview$impressions, content_overview$clicks))
-paste0("Correlation Impressions / Engagement Rate: ", cor(content_overview$impressions, content_overview$engagement_rate))
+paste0("Correlation Impressions / Likes: ", cor(content_posts$impressions, content_posts$likes, use = "complete.obs"))
+paste0("Correlation Impressions / Comments: ", cor(content_posts$impressions, content_posts$comments, use = "complete.obs"))
+paste0("Correlation Impressions / Reposts: ", cor(content_posts$impressions, content_posts$reposts, use = "complete.obs"))
+paste0("Correlation Impressions / Clicks: ", cor(content_posts$impressions, content_posts$clicks, use = "complete.obs"))
+paste0("Correlation Impressions / Engagement Rate: ", cor(content_posts$impressions, content_posts$engagement_rate, use = "complete.obs"))
 ```
 
 ### Top 5: Likes
@@ -291,30 +291,30 @@ content_posts |>
 ### Click Through Rate
 
 ```{r}
-content_overview |>
+content_posts |>
   slice_max(n = 5, order_by = click_through_rate_ctr) |>
   select(post_title, click_through_rate_ctr) |>
   knitr::kable(format = "html")
 ```
 
 ```{r}
-hist(content_overview$click_through_rate_ctr, main = "Distribution of CTR", xlab = "Click Through Rate")
+hist(content_posts$click_through_rate_ctr, main = "Distribution of CTR", xlab = "Click Through Rate")
 ```
 
 ```{r}
-content_overview |>
+content_posts |>
   ggplot(aes(x = impressions, y = click_through_rate_ctr)) +
   geom_point() +
   geom_smooth(method = "lm") +
   labs(x = "\nImpressions", y = "Click Through Rate\n") +
   theme_few()
 
-paste0("Correlation: ", cor(content_overview$impressions, content_overview$click_through_rate_ctr))
-round(quantile(x = content_overview$click_through_rate_ctr, probs = seq(0,1,.1)), digits = 2)
+paste0("Correlation: ", cor(content_posts$impressions, content_posts$click_through_rate_ctr, use = "complete.obs"))
+round(quantile(x = content_posts$click_through_rate_ctr, probs = seq(0,1,.1), na.rm = TRUE), digits = 2)
 ```
 
 ```{r}
-click_through_no_outliers  <- content_overview |>
+click_through_no_outliers  <- content_posts |>
   filter(click_through_rate_ctr < 0.4)
 
 click_through_no_outliers |>
@@ -324,7 +324,7 @@ click_through_no_outliers |>
   labs(x = "\nImpressions", y = "Click Through Rate\n") +
   theme_few()
 
-paste0("Correlation: ", cor(click_through_no_outliers$impressions, click_through_no_outliers$click_through_rate_ctr))
+paste0("Correlation: ", cor(click_through_no_outliers$impressions, click_through_no_outliers$click_through_rate_ctr, use = "complete.obs"))
 ```
 
 ## Visitors
