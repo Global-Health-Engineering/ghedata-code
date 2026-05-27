@@ -26,23 +26,27 @@ flowchart TD
         p1["Content Metrics Processing"]
         p2["All Posts Processing"]
         p3["New Followers Processing"]
+        p4["Visitors Metrics Processing"]
     end
 
     subgraph clean["clean-data/"]
         c1["content-overview.csv"]
         c2["content_posts-overview.csv"]
         c3["new-followers.csv"]
+        c4["visitors-overview.csv"]
     end
 
     raw --> p1
     raw --> p2
     raw --> p3
+    raw --> p4
 
     p1 --> c1
     p2 --> c2
     p3 --> c3
+    p4 --> c4
 
-    c1 & c2 & c3 --> analysis["analysis.qmd"]
+    c1 & c2 & c3 & c4 --> analysis["analysis.qmd"]
 
     style raw fill:#e1f5ff
     style script fill:#fff4e1
@@ -64,6 +68,7 @@ library(ggthemes)
 followers  <- read_csv("clean-data/new-followers.csv")
 content_posts  <- read_csv("clean-data/content_posts-overview.csv")
 content_overview  <- read_csv("clean-data/content_posts-overview.csv")
+visitors  <- read_csv("clean-data/visitors-overview.csv")
 ```
 
 ```{r}
@@ -276,20 +281,19 @@ content_posts |>
 ### Top 5: Engagement Rate
 
 ```{r}
-content_posts |> 
-  slice_max(engagement_rate, n = 5) |> 
+content_posts |>
+  slice_max(engagement_rate, n = 5) |>
   select(post_title, engagement_rate) |>
   arrange(desc(engagement_rate)) |>
   knitr::kable(format = "html")
 ```
 
-
-### Click Through Rate 
+### Click Through Rate
 
 ```{r}
-content_overview |> 
-  slice_max(n = 5, order_by = click_through_rate_ctr) |> 
-  select(post_title, click_through_rate_ctr) |> 
+content_overview |>
+  slice_max(n = 5, order_by = click_through_rate_ctr) |>
+  select(post_title, click_through_rate_ctr) |>
   knitr::kable(format = "html")
 ```
 
@@ -298,7 +302,7 @@ hist(content_overview$click_through_rate_ctr, main = "Distribution of CTR", xlab
 ```
 
 ```{r}
-content_overview |> 
+content_overview |>
   ggplot(aes(x = impressions, y = click_through_rate_ctr)) +
   geom_point() +
   geom_smooth(method = "lm") +
@@ -310,10 +314,10 @@ round(quantile(x = content_overview$click_through_rate_ctr, probs = seq(0,1,.1))
 ```
 
 ```{r}
-click_through_no_outliers  <- content_overview |> 
+click_through_no_outliers  <- content_overview |>
   filter(click_through_rate_ctr < 0.4)
 
-click_through_no_outliers |> 
+click_through_no_outliers |>
   ggplot(aes(x = impressions, y = click_through_rate_ctr)) +
   geom_point() +
   geom_smooth(method = "lm") +
@@ -321,4 +325,81 @@ click_through_no_outliers |>
   theme_few()
 
 paste0("Correlation: ", cor(click_through_no_outliers$impressions, click_through_no_outliers$click_through_rate_ctr))
+```
+
+## Visitors
+
+### Total page views per week
+
+```{r}
+visitors |>
+  group_by(week = floor_date(date, "week")) |>
+  summarise(page_views = sum(total_page_views, na.rm = TRUE), .groups = "drop") |>
+  ggplot(aes(x = week, y = page_views)) +
+  geom_col() +
+  geom_smooth() +
+  labs(
+    x = "",
+    y = "Page views\n"
+  ) +
+  theme_few()
+```
+
+### Total unique visitors per week
+
+```{r}
+visitors |>
+  group_by(week = floor_date(date, "week")) |>
+  summarise(unique_visitors = sum(total_unique_visitors, na.rm = TRUE), .groups = "drop") |>
+  ggplot(aes(x = week, y = unique_visitors)) +
+  geom_col() +
+  geom_smooth() +
+  labs(
+    x = "",
+    y = "Unique visitors\n"
+  ) +
+  theme_few()
+```
+
+### Page views by subpage
+
+```{r}
+visitors |>
+  group_by(week = floor_date(date, "week")) |>
+  summarise(
+    Overview = sum(overview_page_views, na.rm = TRUE),
+    Life = sum(life_page_views, na.rm = TRUE),
+    Jobs = sum(jobs_page_views, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  pivot_longer(-week, names_to = "subpage", values_to = "page_views") |>
+  ggplot(aes(x = week, y = page_views, fill = subpage)) +
+  geom_col() +
+  labs(
+    x = "",
+    y = "Page views\n",
+    fill = ""
+  ) +
+  theme_few()
+```
+
+### Desktop vs. mobile page views
+
+```{r}
+visitors |>
+  group_by(week = floor_date(date, "week")) |>
+  summarise(
+    Desktop = sum(total_page_views_desktop, na.rm = TRUE),
+    Mobile = sum(total_page_views_mobile, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  pivot_longer(-week, names_to = "device", values_to = "page_views") |>
+  ggplot(aes(x = week, y = page_views, fill = device)) +
+  geom_col() +
+  labs(
+    x = "",
+    y = "Page views\n",
+    fill = ""
+  ) +
+  theme_few()
 ```
