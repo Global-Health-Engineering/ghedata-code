@@ -181,6 +181,119 @@ content_overview %>%
 
 ![](analysis_files/figure-commonmark/unnamed-chunk-8-1.png)
 
+### Impressions and Followers
+
+``` r
+followers_week  <- followers |> 
+  mutate(week = floor_date(date, unit = "week", week_start = 1)) |> 
+  group_by(week) |> 
+  slice_max(cumulative_followers) |> 
+  distinct(week, .keep_all = TRUE)  |> 
+  select(week, cumulative_followers)
+
+content_week  <- content_overview |> 
+  mutate(week = floor_date(date, unit = "week", week_start = 1)) |> 
+  group_by(week) |> 
+  summarise(total_impressions = sum(impressions))
+
+merge_week  <- followers_week |> 
+  left_join(content_week)
+
+merge_week  |> 
+  ggplot() +
+  geom_col(data = content_week, aes(x = week, y = total_impressions)) +
+  geom_point(data = followers_week, aes(x = week, y = cumulative_followers), color = "red") +
+  labs(x = "",
+  y = "Weekly Impressions\n") +
+    theme_few()
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-9-1.png)
+
+``` r
+cor_data  <- merge_week |> 
+  drop_na()
+
+cor(cor_data$cumulative_followers, cor_data$total_impressions)
+```
+
+    [1] 0.0176599
+
+## Deep dive on high performing weeks
+
+``` r
+impressions_deepdive  <- content_overview |> 
+  mutate(week = floor_date(date, unit = "week", week_start = 1)) |> 
+  group_by(week) |> 
+  mutate(total_impressions = sum(impressions)) |> 
+  filter(total_impressions > 7000)
+```
+
+``` r
+content_overview |> 
+  ggplot(aes(x = impressions, y = likes)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_few()
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-11-1.png)
+
+``` r
+cor(content_overview$impressions, content_overview$likes)
+```
+
+    [1] 0.9014156
+
+``` r
+content_overview_less7k <- content_overview |> 
+  filter(impressions < 7000)
+
+content_overview_less7k |> 
+  ggplot(aes(x = impressions, y = likes)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_few()
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-12-1.png)
+
+``` r
+cor(content_overview_less7k$impressions, content_overview_less7k$likes)
+```
+
+    [1] 0.8381605
+
+``` r
+paste0("Correlation Impressions / Likes: ", cor(content_overview$impressions, content_overview$likes))
+```
+
+    [1] "Correlation Impressions / Likes: 0.901415584317637"
+
+``` r
+paste0("Correlation Impressions / Comments: ", cor(content_overview$impressions, content_overview$comments))
+```
+
+    [1] "Correlation Impressions / Comments: 0.586045102140429"
+
+``` r
+paste0("Correlation Impressions / Reposts: ", cor(content_overview$impressions, content_overview$reposts))
+```
+
+    [1] "Correlation Impressions / Reposts: 0.295505535482378"
+
+``` r
+paste0("Correlation Impressions / Clicks: ", cor(content_overview$impressions, content_overview$clicks))
+```
+
+    [1] "Correlation Impressions / Clicks: 0.495775047657895"
+
+``` r
+paste0("Correlation Impressions / Engagement Rate: ", cor(content_overview$impressions, content_overview$engagement_rate))
+```
+
+    [1] "Correlation Impressions / Engagement Rate: 0.142885611850119"
+
 ### Top 5: Likes
 
 ``` r
@@ -247,3 +360,74 @@ content_posts |>
 | When it's too hot in the office to work, it's best to just go llama trekking 🦙    https://www.yacana.ch/ (not a paid advertisement, just a good recommendation from us to you)                                                                                                                                                                                                                                                                                                                                                                                         |       0.2759022 |
 
 </div>
+
+### Click Through Rate
+
+``` r
+content_overview |> 
+  slice_max(n = 5, order_by = click_through_rate_ctr) |> 
+  select(post_title, click_through_rate_ctr) |> 
+  knitr::kable(format = "html")
+```
+
+<div>
+
+| post_title                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | click_through_rate_ctr |
+|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------:|
+| It’s a wrap on Day 1! After a series of insightful presentations on GHE statistics 📊 and inspiring talks from our talented PhD researchers 🎓, we ended the day on a creative note. In a 2-hour crafting workshop 🎨 Elizabeth Tilley brought everyone together to carve and print unique cards—an energizing way to close out a fantastic first day!                                                                                                                                                                                                                                                    |              0.7606952 |
+| 🎨 Final exam... but make it ART! ✍️✨ For an extra 2 points, we challenged students in our MSc class 'International Engineering: from Hubris to Hope' to illustrate their favourite lecture—and they delivered! Who said learning can’t be fun, even in an exam? 🤓 🎭 also great feedback for us to learn what the main takeaways were for students. Swipe through the best illustrations & let us know—should this become a tradition? 👇 🎨 Can you spot Colin Colin Walder?                                                                                                                          |              0.6496459 |
+| Our PhD student, Padraic Casserly, is currently in Mzuzu 🇲🇼 , busy setting up and testing various components of the newly installed biogas reactor. The goal of this installation is to evaluate the performance of biogas reactors under real-world conditions. 🧪 With the assistance of the two biogas operators, Mwai Kandaya and Esau Phiri, they are now conducting their initial pathogen tests. 🔬 Want to learn more about this project? You can find all our biogas-related research under the "Publications" tab on our website! 📚 https://lnkd.in/edNgGv6F                                   |              0.2954699 |
+| 🌟 Another productive week at GHE! Our team has been diving deep into ongoing projects here in Zurich 🇨🇭, while part of our crew is hard at work in Blantyre, Malawi. 🇲🇼 Here, we share the most fan-tastic moments of our week—reminding us that sometimes the best ideas come with a refreshing breeze! 😄 What’s your secret to staying cool while working hard? \#StayCool                                                                                                                                                                                                                            |              0.2609083 |
+| Field work is officially starting! 🎉 \[Update 4/4\] Our team is ready to go, and we’re all set up at the Mzedi dumpsite to collect data on the burden of chronic respiratory symptoms and air pollution exposures among waste pickers, as a part of PhD thesis of Saloni Vijay. Credits to Hope kelvin Chilunga for setting up the tent 🏕️! Elizabeth Tilley, Jamillah Meghji, Dr. Peter Banda, Lindsay Zurba Saloni Vijay, Colin Walder, Chana Khuluza, MBBS., JUNIAH MAZEZE, Dunia wasili, Anstead Kankwatira, Rose Malamba, Elizabeth Jalisi, Ramsey Mauka, Innocent Matchipisa, Hope kelvin Chilunga |              0.2489083 |
+
+</div>
+
+``` r
+hist(content_overview$click_through_rate_ctr, main = "Distribution of CTR", xlab = "Click Through Rate")
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-18-1.png)
+
+``` r
+content_overview |> 
+  ggplot(aes(x = impressions, y = click_through_rate_ctr)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "\nImpressions", y = "Click Through Rate\n") +
+  theme_few()
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-19-1.png)
+
+``` r
+paste0("Correlation: ", cor(content_overview$impressions, content_overview$click_through_rate_ctr))
+```
+
+    [1] "Correlation: 0.151369970509074"
+
+``` r
+round(quantile(x = content_overview$click_through_rate_ctr, probs = seq(0,1,.1)), digits = 2)
+```
+
+      0%  10%  20%  30%  40%  50%  60%  70%  80%  90% 100% 
+    0.00 0.02 0.03 0.03 0.04 0.04 0.05 0.05 0.07 0.10 0.76 
+
+``` r
+click_through_no_outliers  <- content_overview |> 
+  filter(click_through_rate_ctr < 0.4)
+
+click_through_no_outliers |> 
+  ggplot(aes(x = impressions, y = click_through_rate_ctr)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "\nImpressions", y = "Click Through Rate\n") +
+  theme_few()
+```
+
+![](analysis_files/figure-commonmark/unnamed-chunk-20-1.png)
+
+``` r
+paste0("Correlation: ", cor(click_through_no_outliers$impressions, click_through_no_outliers$click_through_rate_ctr))
+```
+
+    [1] "Correlation: 0.10378425824936"

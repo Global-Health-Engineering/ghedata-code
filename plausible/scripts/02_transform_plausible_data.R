@@ -9,6 +9,7 @@ library(here)
 library(tidyverse)
 library(lubridate)
 library(jsonlite)
+library(countrycode)
 
 # Define path to raw data
 raw_json_path <- here("data", "plausible_raw.json")
@@ -35,6 +36,13 @@ safe_extract <- function(x, index, default = NA) {
   }
   val <- x[[index]]
   if (is.null(val)) default else val
+}
+
+# Helper function for weighted mean with NA handling
+weighted_mean_na <- function(x, w) {
+  valid <- !is.na(x) & !is.na(w)
+  if (sum(valid) == 0) return(NA_real_)
+  weighted.mean(x[valid], w[valid])
 }
 
 # 1. Extract aggregate metrics ----
@@ -134,13 +142,19 @@ cat("Operating systems extracted:", nrow(os_data), "OS types\n")
 countries_data <- raw_data$countries$results |>
   map(\(row) {
     tibble(
-      country = safe_extract(row$dimensions, 1, "Unknown"),
+      country_code = safe_extract(row$dimensions, 1, "Unknown"),
       visitors = as.integer(safe_extract(row$metrics, 1, 0)),
       visits = as.integer(safe_extract(row$metrics, 2, 0)),
       pageviews = as.integer(safe_extract(row$metrics, 3, 0))
     )
   }) |>
   bind_rows() |>
+  mutate(
+    country = countrycode(country_code, "iso2c", "country.name",
+                          custom_match = c("A1" = "Anonymous Proxy")),
+    country = if_else(is.na(country), country_code, country)
+  ) |>
+  select(country_code, country, everything()) |>
   arrange(desc(visitors))
 
 cat("Countries extracted:", nrow(countries_data), "countries\n")
@@ -158,6 +172,22 @@ pages_data <- raw_data$pages$results |>
     )
   }) |>
   bind_rows() |>
+  # Normalize URLs: remove /content/, /course/, and fix double slashes
+  mutate(
+    page = str_remove(page, "/content"),
+    page = str_remove(page, "/course"),
+    page = str_replace_all(page, "//+", "/")
+  ) |>
+  # Aggregate metrics for duplicate URLs after normalization
+  summarise(
+    bounce_rate = weighted_mean_na(bounce_rate, visits),
+    visit_duration = weighted_mean_na(visit_duration, visits),
+    visitors = sum(visitors),
+    visits = sum(visits),
+    pageviews = sum(pageviews),
+    .by = page
+  ) |>
+  select(page, visitors, visits, pageviews, bounce_rate, visit_duration) |>
   arrange(desc(visitors))
 
 cat("Top pages extracted:", nrow(pages_data), "pages\n")
