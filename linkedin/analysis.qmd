@@ -67,7 +67,7 @@ library(ggthemes)
 
 followers  <- read_csv("clean-data/new-followers.csv")
 content_posts  <- read_csv("clean-data/content_posts-overview.csv")
-content_overview  <- read_csv("clean-data/content_posts-overview.csv")
+content_overview  <- read_csv("clean-data/content-overview.csv")
 visitors  <- read_csv("clean-data/visitors-overview.csv")
 ```
 
@@ -108,14 +108,14 @@ content_overview %>%
 ### Likes
 
 ```{r}
-content_overview %>%
-  group_by(month = floor_date(date, "week")) %>%
+content_posts %>%
+  group_by(week = floor_date(date, "week")) %>%
   summarise(
     sum_value = sum(likes, na.rm = TRUE),
     mean_value = mean(likes, na.rm = TRUE),
     .groups = "drop"
   ) |>
-  ggplot(aes(x = month, y = sum_value)) +
+  ggplot(aes(x = week, y = sum_value)) +
   geom_smooth() +
   geom_col() +
   labs(
@@ -128,20 +128,20 @@ content_overview %>%
 ### Likes per impression
 
 ```{r}
-content_overview  |> 
-  group_by(month = floor_date(date, "week")) %>%
+content_posts |>
+  group_by(week = floor_date(date, "week")) %>%
   summarise(
     sum_likes = sum(likes, na.rm = TRUE),
     sum_impressions = sum(impressions, na.rm = TRUE),
     .groups = "drop"
-  ) |> 
+  ) |>
   mutate(likes_per_impression = sum_likes/sum_impressions) |>
-  ggplot(aes(x = month, y = likes_per_impression))  +
-    geom_col() +
+  ggplot(aes(x = week, y = likes_per_impression))  +
+  geom_col() +
   geom_smooth() +
   labs(
     x = "",
-    y = "Likes\n"
+    y = "Likes per impression\n"
   ) +
   theme_few()
 ```
@@ -149,16 +149,16 @@ content_overview  |>
 ### Number of posts
 
 ```{r}
-mean_n_posts  <- content_overview %>%
+mean_n_posts  <- content_posts %>%
   group_by(month = floor_date(date, "month")) %>%
-  count() |> 
-  ungroup() |> 
-  summarise(mean_posts = mean(n)) |> 
+  count() |>
+  ungroup() |>
+  summarise(mean_posts = mean(n)) |>
   pull()
 
-content_overview %>%
+content_posts %>%
   group_by(month = floor_date(date, "month")) %>%
-  count() |> 
+  count() |>
   ggplot(aes(x = month, y = n)) +
   geom_col() +
   geom_hline(yintercept = mean_n_posts, color = "red", linetype = "dotted") +
@@ -172,16 +172,16 @@ content_overview %>%
 ### Impressions per post
 
 ```{r}
-content_overview %>%
-  group_by(month = floor_date(date, "week")) %>%
+content_posts %>%
+  group_by(week = floor_date(date, "week")) %>%
   summarise(n_posts = n(),
-  impression = sum(impressions)) |> 
-    mutate(impressions_per_post = impression/n_posts) |> 
-  ggplot(aes(x = month, y = impressions_per_post)) +
+  impression = sum(impressions, na.rm = TRUE)) |>
+  mutate(impressions_per_post = impression/n_posts) |>
+  ggplot(aes(x = week, y = impressions_per_post)) +
   geom_smooth() +
   geom_col() +
   labs(x = "",
-  y = "Impressions\n") +
+  y = "Impressions per post\n") +
   theme_few()
 ```
 
