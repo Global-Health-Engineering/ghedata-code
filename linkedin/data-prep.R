@@ -7,15 +7,15 @@ library(ggthemes)
 # Content: Metrics -------------------------------------------------------
 
 content_paths <- c(
-  "raw-data/2024-08/ghe_content.xls",
-  "raw-data/2025-03/ghe_content.xls",
-  "raw-data/2025-05/ghe_content.xls",
-  "raw-data/2025-07/ghe_content.xls",
-  "raw-data/2025-11/ghe_content.xls",
-  "raw-data/2026-05/global-health-engineering_content_1779873554864.xls"
+  "linkedin/raw-data/2024-08/ghe_content.xls",
+  "linkedin/raw-data/2025-03/ghe_content.xls",
+  "linkedin/raw-data/2025-05/ghe_content.xls",
+  "linkedin/raw-data/2025-07/ghe_content.xls",
+  "linkedin/raw-data/2025-11/ghe_content.xls",
+  "linkedin/raw-data/2026-05/global-health-engineering_content_1779873554864.xls"
 )
 
-content_list <- map(content_paths, ~ read_xls(.x, skip = 1))
+content_list <- map(here::here(content_paths), ~ read_xls(.x, skip = 1))
 
 # Final LinkedIn Content df
 content_df <- bind_rows(content_list) |>
@@ -30,40 +30,21 @@ names(content_df) <- gsub(
   replacement = ""
 )
 
-write_excel_csv(x = content_df, file = "clean-data/content-overview.csv")
-
-# visualization example
-content_df %>%
-  group_by(month = floor_date(date, "week")) %>%
-  summarise(
-    sum_value = sum(impressions, na.rm = TRUE),
-    mean_value = mean(impressions, na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  ggplot(aes(x = month, y = sum_value)) +
-  geom_col() +
-  geom_smooth() +
-  labs(
-    title = "Fewer and fewer impressions...",
-    subtitle = "One bar represents one week",
-    x = "",
-    y = "Impressions\n"
-  ) +
-  theme_few()
+write_excel_csv(x = content_df, file = here::here("linkedin/clean-data/content-overview.csv"))
 
 # Content: All posts -------------------------------------------------------
 
 content_post_paths <- c(
-  "raw-data/2026-05/global-health-engineering_content_1779873554864.xls",
-  "raw-data/2025-11/ghe_content.xls",
-  "raw-data/2025-07/ghe_content.xls",
-  "raw-data/2025-05/ghe_content.xls",
-  "raw-data/2025-03/ghe_content.xls",
-  "raw-data/2024-08/ghe_content.xls"
+  "linkedin/raw-data/2026-05/global-health-engineering_content_1779873554864.xls",
+  "linkedin/raw-data/2025-11/ghe_content.xls",
+  "linkedin/raw-data/2025-07/ghe_content.xls",
+  "linkedin/raw-data/2025-05/ghe_content.xls",
+  "linkedin/raw-data/2025-03/ghe_content.xls",
+  "linkedin/raw-data/2024-08/ghe_content.xls"
 )
 
 content_post_list <- map(
-  content_post_paths,
+  here::here(content_post_paths),
   ~ read_xls(.x, skip = 1, sheet = "All posts")
 )
 
@@ -88,25 +69,25 @@ content_post_df <- bind_rows(content_post_list) |>
 
 write_excel_csv(
   x = content_post_df,
-  file = "clean-data/content_posts-overview.csv"
+  file = here::here("linkedin/clean-data/content_posts-overview.csv")
 )
 
 
 # Followers: New followers --------------------------------------------------------------
 
-current_n_followers_ghe <- 3003
+current_n_followers_ghe <- 3359
 
 new_followers_file_paths <- c(
-  "raw-data/2024-08/ghe_followers.xls",
-  "raw-data/2025-03/ghe_followers.xls",
-  "raw-data/2025-05/ghe_followers.xls",
-  "raw-data/2025-07/ghe_followers.xls",
-  "raw-data/2025-11/ghe_followers.xls",
-  "raw-data/2026-05/global-health-engineering_followers_1779873631711.xls"
+  "linkedin/raw-data/2024-08/ghe_followers.xls",
+  "linkedin/raw-data/2025-03/ghe_followers.xls",
+  "linkedin/raw-data/2025-05/ghe_followers.xls",
+  "linkedin/raw-data/2025-07/ghe_followers.xls",
+  "linkedin/raw-data/2025-11/ghe_followers.xls",
+  "linkedin/raw-data/2026-05/global-health-engineering_followers_1779873631711.xls"
 )
 
 new_followers_data_list <- map(
-  new_followers_file_paths,
+  here::here(new_followers_file_paths),
   ~ read_xls(.x, skip = 0)
 )
 
@@ -129,5 +110,36 @@ new_followers_df <- bind_rows(new_followers_data_list) |>
 
 write_excel_csv(
   x = new_followers_df,
-  file = "clean-data/new-followers.csv"
+  file = here::here("linkedin/clean-data/new-followers.csv")
 )
+
+
+# Visitors: Metrics -------------------------------------------------------
+
+visitors_paths <- c(
+  "linkedin/raw-data/2024-08/ghe_visitors.xls",
+  "linkedin/raw-data/2025-03/ghe_visitors.xls",
+  "linkedin/raw-data/2025-05/ghe_visitors.xls",
+  "linkedin/raw-data/2025-07/ghe_visitors.xls",
+  "linkedin/raw-data/2025-11/ghe_visitors.xls",
+  "linkedin/raw-data/2026-05/global-health-engineering_visitors_1779873594771.xls"
+)
+
+visitors_list <- map(
+  here::here(visitors_paths),
+  ~ read_xls(.x, sheet = "Visitor metrics")
+)
+
+visitors_df <- bind_rows(visitors_list) |>
+  distinct(Date, .keep_all = TRUE) |>
+  janitor::clean_names() |>
+  mutate(date_updated = mdy(date)) |>
+  select(date = date_updated, contains("total"))
+
+names(visitors_df) <- gsub(
+  x = names(visitors_df),
+  pattern = "_total",
+  replacement = ""
+)
+
+write_excel_csv(x = visitors_df, file = here::here("linkedin/clean-data/visitors-overview.csv"))
