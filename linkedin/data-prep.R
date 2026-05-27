@@ -11,7 +11,8 @@ content_paths <- c(
   "raw-data/2025-03/ghe_content.xls",
   "raw-data/2025-05/ghe_content.xls",
   "raw-data/2025-07/ghe_content.xls",
-  "raw-data/2025-11/ghe_content.xls"
+  "raw-data/2025-11/ghe_content.xls",
+  "raw-data/2026-05/global-health-engineering_content_1779873554864.xls"
 )
 
 content_list <- map(content_paths, ~ read_xls(.x, skip = 1))
@@ -53,6 +54,7 @@ content_df %>%
 # Content: All posts -------------------------------------------------------
 
 content_post_paths <- c(
+  "raw-data/2026-05/global-health-engineering_content_1779873554864.xls",
   "raw-data/2025-11/ghe_content.xls",
   "raw-data/2025-07/ghe_content.xls",
   "raw-data/2025-05/ghe_content.xls",
@@ -99,7 +101,8 @@ new_followers_file_paths <- c(
   "raw-data/2025-03/ghe_followers.xls",
   "raw-data/2025-05/ghe_followers.xls",
   "raw-data/2025-07/ghe_followers.xls",
-  "raw-data/2025-11/ghe_followers.xls"
+  "raw-data/2025-11/ghe_followers.xls",
+  "raw-data/2026-05/global-health-engineering_followers_1779873631711.xls"
 )
 
 new_followers_data_list <- map(
